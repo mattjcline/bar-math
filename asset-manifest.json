@@ -1,0 +1,10 @@
+{
+  "files": {
+    "main.js": "/bar-math/static/js/main.972326d7.js",
+    "index.html": "/bar-math/index.html",
+    "main.972326d7.js.map": "/bar-math/static/js/main.972326d7.js.map"
+  },
+  "entrypoints": [
+    "static/js/main.972326d7.js"
+  ]
+}
