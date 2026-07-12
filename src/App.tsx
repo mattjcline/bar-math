@@ -373,23 +373,31 @@ export default function App() {
         <div className="header">
           <div className="header-eyebrow">End of Night</div>
           <h1>Bar Math</h1>
-          <input
-            type="date"
-            value={shiftDate}
-            onChange={(e) => setShiftDate(e.target.value)}
-            style={{
-              background: "none",
-              border: "none",
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.4rem" }}>
+            <span style={{
               color: "#3a3a50",
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: "0.68rem",
-              marginTop: "0.4rem",
-              cursor: "pointer",
-              outline: "none",
-              padding: 0,
-              colorScheme: "dark",
-            }}
-          />
+              pointerEvents: "none",
+            }}>
+              {new Date(shiftDate + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
+            </span>
+            <input
+              type="date"
+              value={shiftDate}
+              onChange={(e) => setShiftDate(e.target.value)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "transparent",
+                width: "1.2rem",
+                cursor: "pointer",
+                outline: "none",
+                padding: 0,
+                colorScheme: "dark",
+              }}
+            />
+          </div>
         </div>
 
         <div className="grid">
@@ -503,7 +511,9 @@ export default function App() {
 
         {/* Results */}
         <hr className="divider" />
-        <div className="section-title">Results</div>
+        <div className="section-title">
+          Results for {new Date(shiftDate + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
+        </div>
 
         <div className="results-grid">
           <div className="result-block">
