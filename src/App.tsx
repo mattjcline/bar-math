@@ -373,27 +373,28 @@ export default function App() {
         <div className="header">
           <div className="header-eyebrow">End of Night</div>
           <h1>Bar Math</h1>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.4rem" }}>
-            <span style={{
+          <div style={{ position: "relative", display: "inline-block", marginTop: "0.4rem" }}>
+            <div style={{
               color: "#3a3a50",
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: "0.68rem",
-              pointerEvents: "none",
+              borderBottom: "1px solid #2a2a3a",
+              paddingBottom: "0.1rem",
+              cursor: "pointer",
             }}>
               {new Date(shiftDate + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
-            </span>
+            </div>
             <input
               type="date"
               value={shiftDate}
               onChange={(e) => setShiftDate(e.target.value)}
               style={{
-                background: "none",
-                border: "none",
-                color: "transparent",
-                width: "1.2rem",
+                position: "absolute",
+                inset: 0,
+                opacity: 0,
+                width: "100%",
+                height: "100%",
                 cursor: "pointer",
-                outline: "none",
-                padding: 0,
                 colorScheme: "dark",
               }}
             />
