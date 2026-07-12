@@ -372,7 +372,7 @@ export default function App() {
       <div className="app">
         <div className="header">
           <div className="header-eyebrow">End of Night</div>
-          <h1>Bank Close</h1>
+          <h1>Bar Math</h1>
           <input
             type="date"
             value={shiftDate}
