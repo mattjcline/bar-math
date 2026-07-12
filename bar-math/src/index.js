@@ -1,7 +1,3 @@
-import React from "react";
+import App from "app.tsx";
 
-const SomeComponent = () => {
-  return <div>some Component</div>;
-};
-
-export default SomeComponent;
+export default App;
