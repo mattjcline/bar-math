@@ -1,10 +1,10 @@
 {
   "files": {
-    "main.js": "/bar-math/static/js/main.fe315806.js",
+    "main.js": "/bar-math/static/js/main.4e605b4b.js",
     "index.html": "/bar-math/index.html",
-    "main.fe315806.js.map": "/bar-math/static/js/main.fe315806.js.map"
+    "main.4e605b4b.js.map": "/bar-math/static/js/main.4e605b4b.js.map"
   },
   "entrypoints": [
-    "static/js/main.fe315806.js"
+    "static/js/main.4e605b4b.js"
   ]
 }
