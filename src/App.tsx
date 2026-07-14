@@ -44,6 +44,8 @@ export default function App() {
       }
       setBars(barsRes.data ?? []);
       setUsers(usersRes.data ?? []);
+      const defaultBar = (barsRes.data ?? []).find((b) => b.name === "Louie's");
+      if (defaultBar) setSelectedBarId(defaultBar.id);
     })();
   }, []);
 
