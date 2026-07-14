@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/bar-math/static/css/main.226b6570.css",
-    "main.js": "/bar-math/static/js/main.8f1ee825.js",
+    "main.js": "/bar-math/static/js/main.551f5946.js",
     "index.html": "/bar-math/index.html",
     "main.226b6570.css.map": "/bar-math/static/css/main.226b6570.css.map",
-    "main.8f1ee825.js.map": "/bar-math/static/js/main.8f1ee825.js.map"
+    "main.551f5946.js.map": "/bar-math/static/js/main.551f5946.js.map"
   },
   "entrypoints": [
     "static/css/main.226b6570.css",
-    "static/js/main.8f1ee825.js"
+    "static/js/main.551f5946.js"
   ]
 }
