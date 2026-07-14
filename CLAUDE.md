@@ -27,3 +27,11 @@ Key structure within `App.tsx`:
 - Till math: `expectedTill = cashSales + amBank`; `delta = till - expectedTill`. `amBank` defaults to `"400"`.
 
 When editing, keep new state/derived-value patterns consistent with this style (plain `useState` + inline derivation) rather than introducing new abstractions — the app is intentionally small and flat.
+
+## Mobile responsiveness
+
+This app is used on phones behind a bar at close-out, and must always work well there, especially on iOS Safari. Any change touching layout or form controls must preserve this:
+
+- Every `input`, `select`, and `textarea` (including ones with inline `style`, like the invisible date-input overlay) must have `font-size` >= 16px. Below that threshold, iOS Safari auto-zooms the whole page on focus and the user has to manually zoom back out on every tap — this is the most common way this app breaks on iOS, and it's easy to reintroduce by adding a new field with a smaller `rem` value to match surrounding text.
+- Verify no horizontal overflow at narrow widths (375px and 390px are good baselines) after any layout change, including with realistic long content (long bar names, long staff names) — check `document.documentElement.scrollWidth` against `clientWidth`, since visual overflow can be easy to miss in a quick look.
+- The `.grid` and `.results-grid` two-column layouts collapse to one column via `@media (max-width: 640px)`; keep new multi-column layouts consistent with that pattern rather than introducing fixed-width layouts that don't collapse.

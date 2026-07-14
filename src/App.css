@@ -2,6 +2,9 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Every input/select/textarea below is pinned at >=16px: iOS Safari
+   auto-zooms the page on focus for any form control under that size. */
+
 body {
   background: #0d0d0f;
   color: #c8c8d0;
@@ -81,7 +84,7 @@ body {
   border-radius: 5px;
   color: #e0e0ec;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.95rem;
+  font-size: 1rem;
   padding: 0.5rem 0.7rem;
   outline: none;
   transition: border-color 0.15s;
@@ -110,7 +113,7 @@ body {
   border-radius: 5px;
   color: #e0e0ec;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.88rem;
+  font-size: 1rem;
   padding: 0.45rem 0.6rem;
   outline: none;
   transition: border-color 0.15s;
@@ -303,7 +306,7 @@ body {
   border-radius: 5px;
   color: #e0e0ec;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.78rem;
+  font-size: 1rem;
   padding: 0.4rem 0.6rem;
   outline: none;
 }
@@ -330,7 +333,7 @@ body {
   border-radius: 5px;
   color: #e0e0ec;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.82rem;
+  font-size: 1rem;
   padding: 0.4rem 0.6rem;
   width: 150px;
   outline: none;
@@ -367,7 +370,7 @@ body {
   border-radius: 5px;
   color: #e0e0ec;
   font-family: 'Inter', sans-serif;
-  font-size: 0.85rem;
+  font-size: 1rem;
   padding: 0.6rem 0.7rem;
   outline: none;
   resize: vertical;

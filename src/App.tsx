@@ -257,6 +257,7 @@ export default function App() {
                   height: "100%",
                   cursor: "pointer",
                   colorScheme: "dark",
+                  fontSize: "16px",
                 }}
               />
             </div>
