@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "./supabase";
 import { customRound, fmt, fmtInt, getDefaultDate, nameKey, type Bar, type StaffUser } from "./utils";
 import "./App.css";
@@ -11,7 +11,13 @@ const defaultBartenders = [
 
 let nextId = 4;
 
+const UNLOCK_KEY = "bar-math-unlocked";
+
 export default function App() {
+  const [unlocked, setUnlocked] = useState(() => localStorage.getItem(UNLOCK_KEY) === "true");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState(false);
+
   const [ccTips, setCcTips] = useState("");
   const [cashTips, setCashTips] = useState("");
   const [till, setTill] = useState("");
@@ -33,6 +39,7 @@ export default function App() {
   const [saveInfo, setSaveInfo] = useState<{ version: number; savedAt: string } | null>(null);
 
   useEffect(() => {
+    if (!unlocked) return;
     (async () => {
       const [barsRes, usersRes] = await Promise.all([
         supabase.from("bars").select("id, name").order("name"),
@@ -47,7 +54,17 @@ export default function App() {
       const defaultBar = (barsRes.data ?? []).find((b) => b.name === "Louie's");
       if (defaultBar) setSelectedBarId(defaultBar.id);
     })();
-  }, []);
+  }, [unlocked]);
+
+  const handleUnlockSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === process.env.REACT_APP_SITE_PASSWORD) {
+      localStorage.setItem(UNLOCK_KEY, "true");
+      setUnlocked(true);
+    } else {
+      setPasswordError(true);
+    }
+  };
 
   const ccVal = parseFloat(ccTips) || 0;
   const cashTipsVal = parseFloat(cashTips) || 0;
@@ -202,6 +219,40 @@ export default function App() {
       prev.map((b) => (b.id === id ? { ...b, [field]: value } : b)),
     );
   };
+
+  if (!unlocked) {
+    return (
+      <div className="app">
+        <div className="header">
+          <div className="header-eyebrow">End of Night</div>
+          <h1>Bar Math</h1>
+        </div>
+        <div className="card" style={{ maxWidth: "320px" }}>
+          <div className="card-title">Enter Password</div>
+          <form onSubmit={handleUnlockSubmit}>
+            <div className="field">
+              <input
+                type="password"
+                placeholder="Password"
+                autoFocus
+                value={passwordInput}
+                onChange={(e) => {
+                  setPasswordInput(e.target.value);
+                  setPasswordError(false);
+                }}
+              />
+            </div>
+            <button type="submit" className="btn-save">
+              Unlock
+            </button>
+            {passwordError && (
+              <div className="field-hint error">Incorrect password</div>
+            )}
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
       <div className="app">
