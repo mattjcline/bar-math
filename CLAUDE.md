@@ -17,7 +17,11 @@ There is no separate lint command; ESLint runs as part of `react-scripts start`/
 
 ## Architecture
 
-The entire app is one file: `src/App.tsx`. There is no component tree, routing, or state management library — everything is local `useState` in the single `App` component. `src/index.tsx` only mounts `<App />` into `#root`.
+Two entry points, chosen in `src/index.tsx` by a query-string check (`?admin`) — not the URL hash, since Supabase's magic-link auth redirect puts session tokens in the hash fragment and a hash-based router would collide with it:
+- No `?admin` → `src/App.tsx`, the calculator. Everything is local `useState` in one component, no component tree or state management library.
+- `?admin` present → `src/Admin.tsx`, the admin login (currently just a magic-link sign-in + authorization check; the actual admin panel screens don't exist yet).
+
+The calculator (`App.tsx`) is still one file with no routing/state-management library internally — the split above is only between "calculator" and "admin," not a general move to multi-page architecture within each.
 
 Key structure within `App.tsx`:
 - `STYLES` — a template-literal CSS string injected via a `<style>` tag at render time (no CSS modules, no styled-components, no external stylesheet). All visual design lives here, dark-themed, using CSS custom class names (`.card`, `.result-block`, `.till-badge`, etc.).
@@ -28,6 +32,13 @@ Key structure within `App.tsx`:
 - Kitchen tip-out comes off the top before bartenders are paid: each bar has a `kitchen_tip_percentage` (Supabase `bars` table, default 12%, editable per-bar in the forthcoming admin panel — not editable from this calculator). `kitchenTipAmount = totalTips * kitchenTipPct / 100`; `tipPool = totalTips - kitchenTipAmount`; `hourlyRate = tipPool / totalHours` (not `totalTips / totalHours`). The percentage actually used is snapshotted onto the saved report (`reports.kitchen_tip_percentage`) so history stays accurate if a bar's percentage changes later; `reports.kitchen_tip_amount` is a generated column derived from it.
 
 When editing, keep new state/derived-value patterns consistent with this style (plain `useState` + inline derivation) rather than introducing new abstractions — the app is intentionally small and flat.
+
+## Auth
+
+Two separate, deliberately different auth models:
+- **Calculator**: a single shared password (`REACT_APP_SITE_PASSWORD`), checked client-side, unlock flag in `localStorage`. Not real security (the password is inlined in the shipped JS bundle) — it only exists to keep casual visitors from stumbling onto it. No per-person identity.
+- **Admin** (`Admin.tsx`): real Supabase Auth via magic link (passwordless email). `public.users.auth_user_id` links a Supabase Auth account to a row in the app's own `users` table; access is authorized only if that row's `role` is `'admin'` or `'manager'`. Regular auto-created bartenders never get an `auth_user_id` and can't sign in anywhere.
+- RLS policies (`supabase/policies.sql`) grant identical access `to anon, authenticated` — signing into the admin panel must not change what the calculator itself can see/do in that browser session, since both currently share the same wide-open, no-per-row-restriction trust model. Admin-only *write* policies (e.g. only admins can edit `kitchen_tip_percentage` or void a report) get added alongside each admin-panel feature as it's built, not preemptively.
 
 ## Mobile responsiveness
 

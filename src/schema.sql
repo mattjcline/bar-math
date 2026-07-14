@@ -13,11 +13,14 @@ alter table bars add constraint kitchen_tip_percentage_range
   check (kitchen_tip_percentage between 0 and 100);
 
 create table users (
-  id         uuid primary key default gen_random_uuid(),
-  name       text not null,
-  role       text check (role in ('bartender', 'manager', 'admin')) default 'bartender',
-  is_active  boolean default true,
-  created_at timestamptz default now()
+  id            uuid primary key default gen_random_uuid(),
+  name          text not null,
+  role          text check (role in ('bartender', 'manager', 'admin')) default 'bartender',
+  is_active     boolean default true,
+  created_at    timestamptz default now(),
+  -- Only set for the handful of people with real admin-panel logins
+  -- (Supabase Auth magic link). Regular auto-created staff never get one.
+  auth_user_id  uuid references auth.users(id) unique
 );
 
 create table user_bars (
