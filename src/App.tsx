@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "./supabase";
 
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
@@ -290,6 +291,133 @@ const STYLES = `
     color: #3a3a50;
     margin-top: 0.4rem;
   }
+
+  /* Header meta: bar selector + closing user */
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 0.6rem;
+  }
+
+  .bar-select {
+    background: #0d0d0f;
+    border: 1px solid #2a2a36;
+    border-radius: 5px;
+    color: #e0e0ec;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    padding: 0.4rem 0.6rem;
+    outline: none;
+  }
+
+  .bar-select:focus { border-color: #5050a0; }
+
+  .closing-field {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .closing-field label {
+    font-size: 0.68rem;
+    color: #5a5a6e;
+    font-family: 'IBM Plex Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .closing-field input {
+    background: #0d0d0f;
+    border: 1px solid #2a2a36;
+    border-radius: 5px;
+    color: #e0e0ec;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    padding: 0.4rem 0.6rem;
+    width: 150px;
+    outline: none;
+  }
+
+  .closing-field input:focus { border-color: #5050a0; }
+
+  /* Validation / warning hints */
+  .field-hint {
+    font-size: 0.72rem;
+    margin-top: 0.5rem;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .field-hint.warn { color: #d9a441; }
+  .field-hint.error { color: #cc4444; }
+
+  .bartender-row.duplicate input:first-child { border-color: #cc4444; }
+  .bartender-row.zero-hours input:nth-child(2) { border-color: #d9a441; }
+
+  /* Till delta severity tiers */
+  .result-value.warning { color: #d9a441; }
+  .result-value.blocked { color: #ff5050; }
+
+  .till-badge.warning { background: #2a220f; color: #d9a441; border: 1px solid #4a3a1a; }
+  .till-badge.blocked { background: #2a0f0f; color: #ff5050; border: 1px solid #ff5050; }
+
+  /* Notes */
+  .notes-field textarea {
+    width: 100%;
+    min-height: 70px;
+    background: #0d0d0f;
+    border: 1px solid #2a2a36;
+    border-radius: 5px;
+    color: #e0e0ec;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    padding: 0.6rem 0.7rem;
+    outline: none;
+    resize: vertical;
+  }
+
+  .notes-field textarea:focus { border-color: #5050a0; }
+  .notes-field textarea::placeholder { color: #3a3a50; }
+
+  /* Save */
+  .save-bar {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .btn-save {
+    background: #3a3aa0;
+    border: 1px solid #5050c0;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    padding: 0.65rem 1.4rem;
+    transition: background 0.15s, opacity 0.15s;
+  }
+
+  .btn-save:hover:not(:disabled) { background: #4a4ac0; }
+  .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .save-status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+  }
+
+  .save-status.success { color: #3dcc7a; }
+  .save-status.error { color: #cc4444; }
+
+  .validation-list {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: #d9a441;
+  }
 `;
 
 function customRound(val: number) {
@@ -326,21 +454,55 @@ function getDefaultDate() {
   return now.toISOString().split("T")[0];
 }
 
+type Bar = { id: string; name: string };
+type StaffUser = { id: string; name: string };
+
 export default function App() {
   const [ccTips, setCcTips] = useState("");
   const [cashTips, setCashTips] = useState("");
   const [till, setTill] = useState("");
   const [cashSales, setCashSales] = useState("");
+  const [creditSales, setCreditSales] = useState("");
   const [amBank, setAmBank] = useState("400");
   const [bartenders, setBartenders] = useState(defaultBartenders);
+  const [notes, setNotes] = useState("");
+  const [shiftDate, setShiftDate] = useState(getDefaultDate);
+
+  const [bars, setBars] = useState<Bar[]>([]);
+  const [users, setUsers] = useState<StaffUser[]>([]);
+  const [selectedBarId, setSelectedBarId] = useState("");
+  const [closingName, setClosingName] = useState("");
+  const [loadError, setLoadError] = useState("");
+
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [saveInfo, setSaveInfo] = useState<{ version: number; savedAt: string } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const [barsRes, usersRes] = await Promise.all([
+        supabase.from("bars").select("id, name").order("name"),
+        supabase.from("users").select("id, name").eq("is_active", true).order("name"),
+      ]);
+      if (barsRes.error || usersRes.error) {
+        setLoadError("Couldn't load bars or staff list — check your connection.");
+        return;
+      }
+      setBars(barsRes.data ?? []);
+      setUsers(usersRes.data ?? []);
+    })();
+  }, []);
 
   const ccVal = parseFloat(ccTips) || 0;
   const cashTipsVal = parseFloat(cashTips) || 0;
   const tillVal = parseFloat(till) || 0;
   const cashSalesVal = parseFloat(cashSales) || 0;
+  const creditSalesVal = parseFloat(creditSales) || 0;
   const amBankVal = parseFloat(amBank) || 0;
 
   const totalTips = ccVal + cashTipsVal;
+  const totalSales = cashSalesVal + creditSalesVal;
+  const tipPercent = totalSales > 0 ? (totalTips / totalSales) * 100 : 0;
   const totalHours = bartenders.reduce(
     (s, b) => s + (parseFloat(b.hours) || 0),
     0,
@@ -349,6 +511,128 @@ export default function App() {
   const expectedTill = cashSalesVal + amBankVal;
   const delta = tillVal - expectedTill;
   const hasTill = till !== "" && cashSales !== "";
+  const absDelta = Math.abs(delta);
+  const deltaSeverity: "none" | "normal" | "warning" | "blocked" = !hasTill
+    ? "none"
+    : absDelta >= 400
+      ? "blocked"
+      : absDelta >= 20
+        ? "warning"
+        : "normal";
+
+  const nameKey = (name: string) => name.trim().toLowerCase();
+  const duplicateNameSet = new Set<string>();
+  {
+    const seen = new Set<string>();
+    for (const b of bartenders) {
+      const key = nameKey(b.name);
+      if (key === "") continue;
+      if (seen.has(key)) duplicateNameSet.add(key);
+      seen.add(key);
+    }
+  }
+  const hasDuplicateNames = duplicateNameSet.size > 0;
+  const hasZeroHourWarning = bartenders.some(
+    (b) => nameKey(b.name) !== "" && (parseFloat(b.hours) || 0) === 0,
+  );
+
+  const canSave =
+    !saving &&
+    selectedBarId !== "" &&
+    closingName.trim() !== "" &&
+    deltaSeverity !== "blocked" &&
+    !hasDuplicateNames;
+
+  const handleSave = async () => {
+    if (!canSave) return;
+    setSaveError("");
+    setSaveInfo(null);
+    setSaving(true);
+    try {
+      let knownUsers = users;
+
+      const resolveUser = async (name: string): Promise<string> => {
+        const trimmed = name.trim();
+        const existing = knownUsers.find((u) => nameKey(u.name) === nameKey(trimmed));
+        if (existing) return existing.id;
+        const { data, error } = await supabase
+          .from("users")
+          .insert({ name: trimmed })
+          .select("id, name")
+          .single();
+        if (error) throw error;
+        knownUsers = [...knownUsers, { id: data.id, name: data.name }];
+        await supabase.from("user_bars").insert({ user_id: data.id, bar_id: selectedBarId });
+        return data.id;
+      };
+
+      const closingUserId = await resolveUser(closingName);
+
+      const staff: { user_id: string; name: string; hours: number; payout: number }[] = [];
+      for (const b of bartenders) {
+        if (nameKey(b.name) === "") continue;
+        const hrs = parseFloat(b.hours) || 0;
+        const userId = await resolveUser(b.name);
+        staff.push({
+          user_id: userId,
+          name: b.name.trim(),
+          hours: hrs,
+          payout: customRound(hrs * hourlyRate),
+        });
+      }
+
+      setUsers(knownUsers);
+
+      const { data: existingRows, error: fetchErr } = await supabase
+        .from("reports")
+        .select("id, version, is_current")
+        .eq("bar_id", selectedBarId)
+        .eq("shift_date", shiftDate)
+        .eq("is_void", false)
+        .order("version", { ascending: false });
+      if (fetchErr) throw fetchErr;
+
+      const nextVersion = existingRows && existingRows.length > 0 ? existingRows[0].version + 1 : 1;
+      const currentIds = (existingRows ?? []).filter((r) => r.is_current).map((r) => r.id);
+      if (currentIds.length > 0) {
+        const { error: updateErr } = await supabase
+          .from("reports")
+          .update({ is_current: false })
+          .in("id", currentIds);
+        if (updateErr) throw updateErr;
+      }
+
+      const { data: inserted, error: insertErr } = await supabase
+        .from("reports")
+        .insert({
+          shift_date: shiftDate,
+          version: nextVersion,
+          is_current: true,
+          bar_id: selectedBarId,
+          created_by: closingUserId,
+          cc_tips: ccVal,
+          cash_tips: cashTipsVal,
+          till: hasTill ? tillVal : null,
+          cash_sales: hasTill ? cashSalesVal : null,
+          credit_sales: creditSales !== "" ? creditSalesVal : null,
+          am_bank: amBankVal,
+          staff,
+          total_tips: totalTips,
+          hourly_rate: hourlyRate,
+          till_delta: hasTill ? delta : null,
+          notes: notes.trim() === "" ? null : notes.trim(),
+        })
+        .select("version, created_at")
+        .single();
+      if (insertErr) throw insertErr;
+
+      setSaveInfo({ version: inserted.version, savedAt: inserted.created_at });
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save report.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const addBartender = () => {
     setBartenders((prev) => [...prev, { id: nextId++, name: "", hours: "" }]);
@@ -364,8 +648,6 @@ export default function App() {
     );
   };
 
-  const [shiftDate, setShiftDate] = useState(getDefaultDate);
-
   return (
     <>
       <style>{STYLES}</style>
@@ -373,32 +655,69 @@ export default function App() {
         <div className="header">
           <div className="header-eyebrow">End of Night</div>
           <h1>Bar Math</h1>
-          <div style={{ position: "relative", display: "inline-block", marginTop: "0.4rem" }}>
-            <div style={{
-              color: "#3a3a50",
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: "0.68rem",
-              borderBottom: "1px solid #2a2a3a",
-              paddingBottom: "0.1rem",
-              cursor: "pointer",
-            }}>
-              {new Date(shiftDate + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
+
+          <div className="header-meta">
+            <select
+              className="bar-select"
+              value={selectedBarId}
+              onChange={(e) => setSelectedBarId(e.target.value)}
+            >
+              <option value="" disabled>
+                Select bar…
+              </option>
+              {bars.map((bar) => (
+                <option key={bar.id} value={bar.id}>
+                  {bar.name}
+                </option>
+              ))}
+            </select>
+
+            <div className="closing-field">
+              <label>Closing:</label>
+              <input
+                type="text"
+                list="known-users"
+                placeholder="Your name"
+                value={closingName}
+                onChange={(e) => setClosingName(e.target.value)}
+              />
             </div>
-            <input
-              type="date"
-              value={shiftDate}
-              onChange={(e) => setShiftDate(e.target.value)}
-              style={{
-                position: "absolute",
-                inset: 0,
-                opacity: 0,
-                width: "100%",
-                height: "100%",
+
+            <div style={{ position: "relative", display: "inline-block" }}>
+              <div style={{
+                color: "#3a3a50",
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: "0.68rem",
+                borderBottom: "1px solid #2a2a3a",
+                paddingBottom: "0.1rem",
                 cursor: "pointer",
-                colorScheme: "dark",
-              }}
-            />
+              }}>
+                {new Date(shiftDate + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
+              </div>
+              <input
+                type="date"
+                value={shiftDate}
+                onChange={(e) => setShiftDate(e.target.value)}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  opacity: 0,
+                  width: "100%",
+                  height: "100%",
+                  cursor: "pointer",
+                  colorScheme: "dark",
+                }}
+              />
+            </div>
           </div>
+
+          <datalist id="known-users">
+            {users.map((u) => (
+              <option key={u.id} value={u.name} />
+            ))}
+          </datalist>
+
+          {loadError && <div className="field-hint error">{loadError}</div>}
         </div>
 
         <div className="grid">
@@ -454,6 +773,17 @@ export default function App() {
               />
             </div>
             <div className="field">
+              <label>Credit Card Sales (optional)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={creditSales}
+                onChange={(e) => setCreditSales(e.target.value)}
+              />
+            </div>
+            <div className="field">
               <label>Money in the Till</label>
               <input
                 type="number"
@@ -474,39 +804,71 @@ export default function App() {
               <span>Hours</span>
               <span></span>
             </div>
-            {bartenders.map((b) => (
-              <div className="bartender-row" key={b.id}>
-                <input
-                  type="text"
-                  placeholder="Bartender name"
-                  value={b.name}
-                  onChange={(e) =>
-                    updateBartender(b.id, "name", e.target.value)
-                  }
-                />
-                <input
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  placeholder="0"
-                  value={b.hours}
-                  onChange={(e) =>
-                    updateBartender(b.id, "hours", e.target.value)
-                  }
-                />
-                <button
-                  className="btn-remove"
-                  onClick={() => removeBartender(b.id)}
-                  disabled={bartenders.length <= 1}
-                  title="Remove"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
+            {bartenders.map((b) => {
+              const key = nameKey(b.name);
+              const isDuplicate = key !== "" && duplicateNameSet.has(key);
+              const isZeroHours = key !== "" && (parseFloat(b.hours) || 0) === 0;
+              const rowClass = [
+                "bartender-row",
+                isDuplicate && "duplicate",
+                isZeroHours && "zero-hours",
+              ]
+                .filter(Boolean)
+                .join(" ");
+              return (
+                <div className={rowClass} key={b.id}>
+                  <input
+                    type="text"
+                    list="known-users"
+                    placeholder="Bartender name"
+                    value={b.name}
+                    onChange={(e) =>
+                      updateBartender(b.id, "name", e.target.value)
+                    }
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    placeholder="0"
+                    value={b.hours}
+                    onChange={(e) =>
+                      updateBartender(b.id, "hours", e.target.value)
+                    }
+                  />
+                  <button
+                    className="btn-remove"
+                    onClick={() => removeBartender(b.id)}
+                    disabled={bartenders.length <= 1}
+                    title="Remove"
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            })}
             <button className="btn-add" onClick={addBartender}>
               + Add Bartender
             </button>
+            {hasDuplicateNames && (
+              <div className="field-hint error">
+                Duplicate names aren't allowed — each bartender needs a unique name.
+              </div>
+            )}
+            {!hasDuplicateNames && hasZeroHourWarning && (
+              <div className="field-hint warn">
+                Some bartenders have 0 hours — they'll receive no payout.
+              </div>
+            )}
+          </div>
+
+          <div className="card full-width notes-field">
+            <div className="card-title">Notes</div>
+            <textarea
+              placeholder="Anything worth flagging about tonight's close…"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
           </div>
         </div>
 
@@ -546,14 +908,34 @@ export default function App() {
             {hasTill ? (
               <>
                 <div
-                  className={`result-value ${delta > 0 ? "over" : delta < 0 ? "short" : ""}`}
+                  className={`result-value ${
+                    deltaSeverity === "blocked"
+                      ? "blocked"
+                      : deltaSeverity === "warning"
+                        ? "warning"
+                        : delta > 0
+                          ? "over"
+                          : delta < 0
+                            ? "short"
+                            : ""
+                  }`}
                 >
                   {delta === 0
                     ? "Even"
                     : `${delta > 0 ? "+" : ""}${fmt(delta)}`}
                 </div>
                 <div
-                  className={`till-badge ${delta > 0 ? "over" : delta < 0 ? "short" : "even"}`}
+                  className={`till-badge ${
+                    deltaSeverity === "blocked"
+                      ? "blocked"
+                      : deltaSeverity === "warning"
+                        ? "warning"
+                        : delta > 0
+                          ? "over"
+                          : delta < 0
+                            ? "short"
+                            : "even"
+                  }`}
                 >
                   {delta > 0 ? "Over" : delta < 0 ? "Short" : "Exact"}
                 </div>
@@ -567,12 +949,29 @@ export default function App() {
                 >
                   Expected {fmt(expectedTill)} (incl. {fmt(amBankVal)} AM bank)
                 </div>
+                {deltaSeverity === "warning" && (
+                  <div className="field-hint warn">
+                    ⚠ Exceeds ±$20 — double-check the count
+                  </div>
+                )}
+                {deltaSeverity === "blocked" && (
+                  <div className="field-hint error">
+                    ✕ Exceeds ±$400 — cannot save until corrected
+                  </div>
+                )}
               </>
             ) : (
               <div className="result-value" style={{ color: "#3a3a50" }}>
                 —
               </div>
             )}
+          </div>
+
+          <div className="result-block">
+            <div className="result-label">Tip %</div>
+            <div className="result-value">
+              {totalSales > 0 ? `${tipPercent.toFixed(1)}%` : "—"}
+            </div>
           </div>
 
           {/* Payouts */}
@@ -617,6 +1016,30 @@ export default function App() {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="save-bar">
+          <button className="btn-save" disabled={!canSave} onClick={handleSave}>
+            {saving ? "Saving…" : "Save Report"}
+          </button>
+          {!canSave && !saving && (
+            <div className="validation-list">
+              {selectedBarId === "" && <div>• Select a bar</div>}
+              {closingName.trim() === "" && <div>• Enter who's closing</div>}
+              {hasDuplicateNames && <div>• Fix duplicate bartender names</div>}
+              {deltaSeverity === "blocked" && <div>• Till delta exceeds ±$400</div>}
+            </div>
+          )}
+          {saveError && <div className="save-status error">{saveError}</div>}
+          {saveInfo && (
+            <div className="save-status success">
+              Saved as v{saveInfo.version} ·{" "}
+              {new Date(saveInfo.savedAt).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </div>
+          )}
         </div>
       </div>
     </>
