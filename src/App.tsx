@@ -42,7 +42,7 @@ export default function App() {
     if (!unlocked) return;
     (async () => {
       const [barsRes, usersRes] = await Promise.all([
-        supabase.from("bars").select("id, name").order("name"),
+        supabase.from("bars").select("id, name, kitchen_tip_percentage").order("name"),
         supabase.from("users").select("id, name").eq("is_active", true).order("name"),
       ]);
       if (barsRes.error || usersRes.error) {
@@ -80,7 +80,12 @@ export default function App() {
     (s, b) => s + (parseFloat(b.hours) || 0),
     0,
   );
-  const hourlyRate = totalHours > 0 ? totalTips / totalHours : 0;
+
+  const selectedBar = bars.find((b) => b.id === selectedBarId);
+  const kitchenTipPct = selectedBar?.kitchen_tip_percentage ?? 0;
+  const kitchenTipAmount = totalTips * kitchenTipPct / 100;
+  const tipPool = totalTips - kitchenTipAmount;
+  const hourlyRate = totalHours > 0 ? tipPool / totalHours : 0;
   const expectedTill = cashSalesVal + amBankVal;
   const delta = tillVal - expectedTill;
   const hasTill = till !== "" && cashSales !== "";
@@ -191,6 +196,7 @@ export default function App() {
           staff,
           total_tips: totalTips,
           hourly_rate: hourlyRate,
+          kitchen_tip_percentage: kitchenTipPct,
           till_delta: hasTill ? delta : null,
           notes: notes.trim() === "" ? null : notes.trim(),
         })
@@ -478,6 +484,25 @@ export default function App() {
           </div>
 
           <div className="result-block">
+            <div className="result-label">Kitchen Tip-Out</div>
+            <div className="result-value">
+              {selectedBar ? fmt(kitchenTipAmount) : "—"}
+            </div>
+            {selectedBar && (
+              <div
+                style={{
+                  marginTop: "0.5rem",
+                  fontSize: "0.72rem",
+                  color: "#4a4a60",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                }}
+              >
+                {kitchenTipPct}% off the top
+              </div>
+            )}
+          </div>
+
+          <div className="result-block">
             <div className="result-label">Hourly Rate</div>
             <div className="result-value">
               {totalHours > 0 ? fmt(hourlyRate) : "—"}
@@ -493,6 +518,18 @@ export default function App() {
                 </span>
               )}
             </div>
+            {totalHours > 0 && selectedBar && kitchenTipPct > 0 && (
+              <div
+                style={{
+                  marginTop: "0.5rem",
+                  fontSize: "0.72rem",
+                  color: "#4a4a60",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                }}
+              >
+                Pool: {fmt(tipPool)} after {kitchenTipPct}% kitchen tip-out
+              </div>
+            )}
           </div>
 
           {/* Till delta */}

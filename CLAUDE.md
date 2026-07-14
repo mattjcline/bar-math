@@ -25,6 +25,7 @@ Key structure within `App.tsx`:
 - Bartender rows are an array of `{ id, name, hours }` in state, mutated via `addBartender`/`removeBartender`/`updateBartender`; `id` is assigned from a module-level `nextId` counter (not reset on remount).
 - All derived values (`totalTips`, `totalHours`, `hourlyRate`, `expectedTill`, `delta`, `hasTill`) are computed inline on every render from the raw string-valued inputs — no `useMemo`, no effects. Numeric inputs are stored as strings and parsed with `parseFloat(...) || 0` at use time.
 - Till math: `expectedTill = cashSales + amBank`; `delta = till - expectedTill`. `amBank` defaults to `"400"`.
+- Kitchen tip-out comes off the top before bartenders are paid: each bar has a `kitchen_tip_percentage` (Supabase `bars` table, default 12%, editable per-bar in the forthcoming admin panel — not editable from this calculator). `kitchenTipAmount = totalTips * kitchenTipPct / 100`; `tipPool = totalTips - kitchenTipAmount`; `hourlyRate = tipPool / totalHours` (not `totalTips / totalHours`). The percentage actually used is snapshotted onto the saved report (`reports.kitchen_tip_percentage`) so history stays accurate if a bar's percentage changes later; `reports.kitchen_tip_amount` is a generated column derived from it.
 
 When editing, keep new state/derived-value patterns consistent with this style (plain `useState` + inline derivation) rather than introducing new abstractions — the app is intentionally small and flat.
 

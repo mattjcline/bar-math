@@ -1,4 +1,4 @@
-export type Bar = { id: string; name: string };
+export type Bar = { id: string; name: string; kitchen_tip_percentage: number | null };
 export type StaffUser = { id: string; name: string };
 
 export function customRound(val: number) {

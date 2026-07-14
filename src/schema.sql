@@ -2,11 +2,15 @@
 -- Run this in your Supabase SQL editor
 
 create table bars (
-  id                      uuid primary key default gen_random_uuid(),
-  name                    text not null,
-  webhook_url             text,
-  webhook_delta_threshold numeric default 20
+  id                       uuid primary key default gen_random_uuid(),
+  name                     text not null,
+  webhook_url              text,
+  webhook_delta_threshold  numeric default 20,
+  kitchen_tip_percentage   numeric default 12
 );
+
+alter table bars add constraint kitchen_tip_percentage_range
+  check (kitchen_tip_percentage between 0 and 100);
 
 create table users (
   id         uuid primary key default gen_random_uuid(),
@@ -44,6 +48,7 @@ create table reports (
   till_delta   numeric,
   notes        text,
   webhook_sent boolean default false,
+  kitchen_tip_percentage numeric,
   total_sales  numeric generated always as (
     coalesce(cash_sales, 0) + coalesce(credit_sales, 0)
   ) stored,
@@ -52,6 +57,9 @@ create table reports (
     then (coalesce(cc_tips, 0) + coalesce(cash_tips, 0)) /
          (coalesce(cash_sales, 0) + coalesce(credit_sales, 0)) * 100
     else null end
+  ) stored,
+  kitchen_tip_amount numeric generated always as (
+    coalesce(total_tips, 0) * coalesce(kitchen_tip_percentage, 0) / 100
   ) stored
 );
 
