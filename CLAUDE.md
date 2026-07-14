@@ -67,4 +67,10 @@ Still hack-mode, nothing here is live for real users yet — tracked so this doe
 - **No admin/manager onboarding flow.** Promoting someone to `role = 'admin'`/`'manager'` and linking their `auth_user_id` is still a manual step in the Supabase SQL editor. A real flow would need an invite-then-self-link-on-first-login pattern (a `users.email` column plus a narrow RLS policy letting a signed-in user claim their own invited row) — deliberately deferred as a bigger, separate feature when Staff was scoped.
 - **No bar management.** Bar Settings edits the 4 existing bars only; adding, renaming, or removing a bar isn't supported anywhere in the UI.
 - **Voiding a report is one-way.** There's no un-void action in the Reports tab; reversing a mistaken void currently requires a direct DB edit.
-- **Tempest's kitchen tip-out doesn't fit the current model.** Every bar's `kitchen_tip_percentage` is applied as a percentage of *total tips* (see the kitchen tip-out math in "Architecture" above), but Tempest actually calculates it as 10% of Gross Kitchen Sales — a different input entirely that the calculator doesn't currently collect. Needs a per-bar calculation-method field (percentage-of-tips vs. percentage-of-gross-kitchen-sales) plus a gross kitchen sales input on the calculator for bars using the latter, before Tempest can be onboarded correctly.
+
+## In-progress work
+
+- **Tempest's kitchen tip-out calculation.** Every bar's `kitchen_tip_percentage` is currently applied as a percentage of *total tips*, but Tempest actually calculates it as 10% of Gross Kitchen Sales — a different input the calculator doesn't currently collect. Design is spec'd and an implementation plan is written and approved, but no code has been touched yet:
+  - Spec: `docs/superpowers/specs/2026-07-14-tempest-kitchen-tip-out-design.md`
+  - Plan: `docs/superpowers/plans/2026-07-14-tempest-kitchen-tip-out.md` (7 tasks: pure calc/formatting functions + tests in `utils.ts`, `schema.sql` + hand-run migration SQL, calculator wiring, Bar Settings dropdown, Reports display, CLAUDE.md update, end-to-end verification)
+  - To resume: invoke `superpowers:subagent-driven-development` against the plan file, starting at Task 1.
