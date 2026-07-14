@@ -1,26 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import { customRound, fmt, fmtInt, getDefaultDate, nameKey, type Bar, type StaffUser } from "./utils";
 import "./App.css";
-
-function customRound(val: number) {
-  const floor = Math.floor(val);
-  const dec = val - floor;
-  return dec >= 0.9 ? floor + 1 : floor;
-}
-
-function fmt(val: number) {
-  return (
-    "$" +
-    val.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  );
-}
-
-function fmtInt(val: number) {
-  return "$" + customRound(val).toLocaleString("en-US");
-}
 
 const defaultBartenders = [
   { id: 1, name: "", hours: "" },
@@ -29,15 +10,6 @@ const defaultBartenders = [
 ];
 
 let nextId = 4;
-
-function getDefaultDate() {
-  const now = new Date();
-  if (now.getHours() < 6) now.setDate(now.getDate() - 1);
-  return now.toISOString().split("T")[0];
-}
-
-type Bar = { id: string; name: string };
-type StaffUser = { id: string; name: string };
 
 export default function App() {
   const [ccTips, setCcTips] = useState("");
@@ -102,7 +74,6 @@ export default function App() {
         ? "warning"
         : "normal";
 
-  const nameKey = (name: string) => name.trim().toLowerCase();
   const duplicateNameSet = new Set<string>();
   {
     const seen = new Set<string>();
