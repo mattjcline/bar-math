@@ -25,6 +25,27 @@ alter table reports enable row level security;
 create policy "read bars" on bars
   for select to anon, authenticated using (true);
 
+-- Editing a bar's kitchen tip-out % / webhook settings affects every
+-- bartender's payout at that bar, so — unlike the read-everything
+-- model above — this write is gated to signed-in admins/managers only,
+-- same role check as "void reports".
+create policy "update bars" on bars
+  for update to authenticated
+  using (
+    exists (
+      select 1 from users u
+      where u.auth_user_id = auth.uid()
+        and u.role in ('admin', 'manager')
+    )
+  )
+  with check (
+    exists (
+      select 1 from users u
+      where u.auth_user_id = auth.uid()
+        and u.role in ('admin', 'manager')
+    )
+  );
+
 create policy "read users" on users
   for select to anon, authenticated using (true);
 
@@ -43,5 +64,32 @@ create policy "read reports" on reports
 create policy "create reports" on reports
   for insert to anon, authenticated with check (true);
 
+-- General updates (e.g. the calculator flipping is_current when a new
+-- version is saved) stay wide open like everything else here, EXCEPT
+-- is_void: this check forces the resulting row's is_void to match what
+-- it already was, so this policy alone can never be used to void a
+-- report. Voiding only succeeds via the "void reports" policy below.
 create policy "update reports" on reports
-  for update to anon, authenticated using (true) with check (true);
+  for update to anon, authenticated
+  using (true)
+  with check (is_void = (select r.is_void from reports r where r.id = reports.id));
+
+-- Voiding a report (setting is_void = true) is the one write in this
+-- app that's actually gated by RLS rather than by UI/trust — restricted
+-- to signed-in admins/managers, matching the admin panel's own gate.
+create policy "void reports" on reports
+  for update to authenticated
+  using (
+    exists (
+      select 1 from users u
+      where u.auth_user_id = auth.uid()
+        and u.role in ('admin', 'manager')
+    )
+  )
+  with check (
+    exists (
+      select 1 from users u
+      where u.auth_user_id = auth.uid()
+        and u.role in ('admin', 'manager')
+    )
+  );

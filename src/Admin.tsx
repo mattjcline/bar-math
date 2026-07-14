@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "./supabase";
+import Reports from "./Reports";
+import BarSettings from "./BarSettings";
 import "./App.css";
 
 type AdminSession = {
@@ -13,6 +15,8 @@ function adminRedirectUrl() {
   return `${window.location.origin}${window.location.pathname}?admin`;
 }
 
+type Tab = "reports" | "settings";
+
 export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<AdminSession | null>(null);
@@ -20,6 +24,7 @@ export default function Admin() {
   const [linkSent, setLinkSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState<Tab>("reports");
 
   useEffect(() => {
     let active = true;
@@ -89,9 +94,21 @@ export default function Admin() {
 
   return (
     <div className="app">
-      <div className="header">
-        <div className="header-eyebrow">Bar Math</div>
-        <h1>Admin</h1>
+      <div className="header admin-header">
+        <div>
+          <div className="header-eyebrow">Bar Math</div>
+          <h1>Admin</h1>
+        </div>
+        {session && session.isAuthorized && (
+          <div className="header-signed-in">
+            <span>
+              <strong>{session.name ?? session.email}</strong> ({session.role})
+            </span>
+            <button className="btn-signout" onClick={handleSignOut}>
+              Sign Out
+            </button>
+          </div>
+        )}
       </div>
 
       {!session && (
@@ -135,18 +152,25 @@ export default function Admin() {
       )}
 
       {session && session.isAuthorized && (
-        <div className="card" style={{ maxWidth: "360px" }}>
-          <div className="card-title">Signed In</div>
-          <div className="field-hint">
-            {session.name ?? session.email} ({session.role})
+        <>
+          <div className="tab-bar">
+            <button
+              className={`tab-button ${activeTab === "reports" ? "active" : ""}`}
+              onClick={() => setActiveTab("reports")}
+            >
+              Reports
+            </button>
+            <button
+              className={`tab-button ${activeTab === "settings" ? "active" : ""}`}
+              onClick={() => setActiveTab("settings")}
+            >
+              Bar Settings
+            </button>
           </div>
-          <div className="field-hint" style={{ marginTop: "0.5rem" }}>
-            Admin panel coming soon.
-          </div>
-          <button className="btn-save" style={{ marginTop: "1rem" }} onClick={handleSignOut}>
-            Sign Out
-          </button>
-        </div>
+
+          {activeTab === "reports" && <Reports />}
+          {activeTab === "settings" && <BarSettings />}
+        </>
       )}
     </div>
   );

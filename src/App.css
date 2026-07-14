@@ -40,6 +40,74 @@ body {
   letter-spacing: -0.02em;
 }
 
+/* Admin header: same .header spacing/border, plus a right-aligned
+   signed-in strip that wraps below the title on narrow screens
+   instead of forcing overflow. Scoped to .admin-header so it doesn't
+   affect the calculator's plain .header (eyebrow/h1/meta stacked). */
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.header-signed-in {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  color: #6a6a80;
+  white-space: nowrap;
+}
+
+.header-signed-in strong {
+  color: #a0a0c0;
+  font-weight: 600;
+}
+
+.btn-signout {
+  background: none;
+  border: none;
+  color: #5050a0;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.btn-signout:hover { color: #8080d0; }
+
+/* Admin tabs */
+.tab-bar {
+  display: flex;
+  gap: 1.25rem;
+  border-bottom: 1px solid #22222c;
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #5a5a6e;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.6rem 0.1rem;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab-button:hover { color: #a0a0c0; }
+.tab-button.active { color: #e0e0f0; border-bottom-color: #5050a0; }
+
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -459,3 +527,101 @@ body {
   font-size: 0.72rem;
   color: #d9a441;
 }
+
+/* Reports view */
+.reports-list {
+  margin-top: 1rem;
+}
+
+.report-row {
+  border-bottom: 1px solid #1a1a22;
+}
+
+.report-row-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+  padding: 0.7rem 0.2rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.82rem;
+  color: #c0c0d8;
+}
+
+.report-row-summary:hover { background: #17171f; }
+
+.report-row-date { color: #8080a0; }
+
+.report-row-bar {
+  color: #e0e0f0;
+  font-weight: 600;
+  flex: 1 1 auto;
+}
+
+.report-row-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
+.expand-chevron { color: #5a5a6e; }
+
+.void-badge {
+  display: inline-block;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: #2a0f0f;
+  color: #cc4444;
+  border: 1px solid #4a1a1a;
+  border-radius: 3px;
+  padding: 0.15rem 0.4rem;
+  margin-right: 0.4rem;
+}
+
+.version-badge {
+  display: inline-block;
+  font-size: 0.62rem;
+  color: #5a5a6e;
+  margin-right: 0.4rem;
+}
+
+.report-detail {
+  padding: 1rem 0.2rem 1.25rem;
+}
+
+.report-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .report-detail-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.version-history-row {
+  font-size: 0.75rem;
+  color: #8080a0;
+  margin-top: 0.3rem;
+}
+
+.btn-void {
+  background: none;
+  border: 1px solid #4a1a1a;
+  border-radius: 6px;
+  color: #cc4444;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 1rem;
+  margin-top: 1rem;
+  transition: background 0.15s;
+}
+
+.btn-void:hover:not(:disabled) { background: #2a0f0f; }
+.btn-void:disabled { opacity: 0.5; cursor: not-allowed; }
