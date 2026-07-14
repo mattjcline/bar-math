@@ -52,8 +52,43 @@ create policy "read users" on users
 create policy "create users" on users
   for insert to anon, authenticated with check (true);
 
+-- Editing a bartender's name/active status is gated to admins/managers,
+-- same role check used elsewhere. Note this checks role only, not which
+-- row is being targeted — same trust model as "update bars" and "void
+-- reports": once authenticated as admin/manager, you're a fully trusted
+-- operator of this table, not scoped to a subset of rows.
+create policy "update users" on users
+  for update to authenticated
+  using (
+    exists (
+      select 1 from users u
+      where u.auth_user_id = auth.uid()
+        and u.role in ('admin', 'manager')
+    )
+  )
+  with check (
+    exists (
+      select 1 from users u
+      where u.auth_user_id = auth.uid()
+        and u.role in ('admin', 'manager')
+    )
+  );
+
 create policy "link user to bar" on user_bars
   for insert to anon, authenticated with check (true);
+
+-- Unlinking (unlike linking) is an admin-panel-only action, so it's
+-- gated the same way as the write policies above rather than left
+-- wide open.
+create policy "unlink user from bar" on user_bars
+  for delete to authenticated
+  using (
+    exists (
+      select 1 from users u
+      where u.auth_user_id = auth.uid()
+        and u.role in ('admin', 'manager')
+    )
+  );
 
 create policy "read user_bars" on user_bars
   for select to anon, authenticated using (true);

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "./supabase";
 import Reports from "./Reports";
 import BarSettings from "./BarSettings";
+import Staff from "./Staff";
 import "./App.css";
 
 type AdminSession = {
@@ -15,7 +16,7 @@ function adminRedirectUrl() {
   return `${window.location.origin}${window.location.pathname}?admin`;
 }
 
-type Tab = "reports" | "settings";
+type Tab = "reports" | "settings" | "staff";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -166,10 +167,17 @@ export default function Admin() {
             >
               Bar Settings
             </button>
+            <button
+              className={`tab-button ${activeTab === "staff" ? "active" : ""}`}
+              onClick={() => setActiveTab("staff")}
+            >
+              Staff
+            </button>
           </div>
 
           {activeTab === "reports" && <Reports />}
           {activeTab === "settings" && <BarSettings />}
+          {activeTab === "staff" && <Staff />}
         </>
       )}
     </div>
