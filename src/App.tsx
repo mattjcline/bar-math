@@ -234,32 +234,20 @@ export default function App() {
               />
             </div>
 
-            <div style={{ position: "relative", display: "inline-block" }}>
-              <div style={{
-                color: "#3a3a50",
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: "0.68rem",
-                borderBottom: "1px solid #2a2a3a",
-                paddingBottom: "0.1rem",
-                cursor: "pointer",
-              }}>
-                {new Date(shiftDate + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
+            <div className="date-field">
+              <label>Date:</label>
+              <div className="date-display">
+                <span>
+                  {new Date(shiftDate + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
+                </span>
+                <input
+                  type="date"
+                  value={shiftDate}
+                  onChange={(e) => setShiftDate(e.target.value)}
+                  onClick={(e) => e.currentTarget.showPicker?.()}
+                  className="date-input-overlay"
+                />
               </div>
-              <input
-                type="date"
-                value={shiftDate}
-                onChange={(e) => setShiftDate(e.target.value)}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  opacity: 0,
-                  width: "100%",
-                  height: "100%",
-                  cursor: "pointer",
-                  colorScheme: "dark",
-                  fontSize: "16px",
-                }}
-              />
             </div>
           </div>
 
