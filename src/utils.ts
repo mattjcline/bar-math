@@ -24,7 +24,10 @@ export function fmtInt(val: number) {
 export function getDefaultDate() {
   const now = new Date();
   if (now.getHours() < 6) now.setDate(now.getDate() - 1);
-  return now.toISOString().split("T")[0];
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export function nameKey(name: string) {
