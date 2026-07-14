@@ -40,6 +40,7 @@ export default function Reports() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [viewedVersionId, setViewedVersionId] = useState<Record<string, string>>({});
   const [voidingId, setVoidingId] = useState<string | null>(null);
   const [confirmingVoidId, setConfirmingVoidId] = useState<string | null>(null);
   const [voidError, setVoidError] = useState("");
@@ -159,6 +160,11 @@ export default function Reports() {
                   onClick={() => {
                     setExpandedKey(expanded ? null : g.key);
                     setConfirmingVoidId(null);
+                    setViewedVersionId((prev) => {
+                      const next = { ...prev };
+                      delete next[g.key];
+                      return next;
+                    });
                   }}
                 >
                   <span className="report-row-date">{g.shiftDate}</span>
@@ -180,6 +186,10 @@ export default function Reports() {
                 {expanded && (
                   <ReportDetail
                     versions={g.versions}
+                    viewedVersionId={viewedVersionId[g.key] ?? current.id}
+                    onSelectVersion={(id) =>
+                      setViewedVersionId((prev) => ({ ...prev, [g.key]: id }))
+                    }
                     voidingId={voidingId}
                     confirmingVoidId={confirmingVoidId}
                     voidError={voidError}
@@ -197,35 +207,48 @@ export default function Reports() {
 
 function ReportDetail({
   versions,
+  viewedVersionId,
+  onSelectVersion,
   voidingId,
   confirmingVoidId,
   voidError,
   onVoid,
 }: {
   versions: ReportRow[];
+  viewedVersionId: string;
+  onSelectVersion: (id: string) => void;
   voidingId: string | null;
   confirmingVoidId: string | null;
   voidError: string;
   onVoid: (id: string) => void;
 }) {
-  const current = versions[0];
+  const latest = versions[0];
+  const viewed = versions.find((v) => v.id === viewedVersionId) ?? latest;
+  const isSuperseded = viewed.id !== latest.id;
   const tipPool =
-    current.total_tips != null && current.kitchen_tip_amount != null
-      ? current.total_tips - current.kitchen_tip_amount
+    viewed.total_tips != null && viewed.kitchen_tip_amount != null
+      ? viewed.total_tips - viewed.kitchen_tip_amount
       : null;
 
   return (
     <div className="report-detail">
+      {isSuperseded && (
+        <div className="superseded-banner">
+          Viewing v{viewed.version}, saved {new Date(viewed.created_at).toLocaleString()} — superseded by v
+          {latest.version}. This is not the current report.
+        </div>
+      )}
+
       <div className="report-detail-grid">
         <div>
           <div className="result-label">Closed By</div>
-          <div>{current.users?.name ?? "—"}</div>
+          <div>{viewed.users?.name ?? "—"}</div>
         </div>
         <div>
           <div className="result-label">Kitchen Tip-Out</div>
           <div>
-            {current.kitchen_tip_percentage != null
-              ? `${current.kitchen_tip_percentage}% (${fmt(current.kitchen_tip_amount ?? 0)})`
+            {viewed.kitchen_tip_percentage != null
+              ? `${viewed.kitchen_tip_percentage}% (${fmt(viewed.kitchen_tip_amount ?? 0)})`
               : "—"}
           </div>
         </div>
@@ -235,25 +258,25 @@ function ReportDetail({
         </div>
         <div>
           <div className="result-label">Hourly Rate</div>
-          <div>{current.hourly_rate != null ? fmt(current.hourly_rate) : "—"}</div>
+          <div>{viewed.hourly_rate != null ? fmt(viewed.hourly_rate) : "—"}</div>
         </div>
         <div>
           <div className="result-label">Till</div>
-          <div>{current.till != null ? fmt(current.till) : "—"}</div>
+          <div>{viewed.till != null ? fmt(viewed.till) : "—"}</div>
         </div>
         <div>
           <div className="result-label">AM Bank</div>
-          <div>{current.am_bank != null ? fmt(current.am_bank) : "—"}</div>
+          <div>{viewed.am_bank != null ? fmt(viewed.am_bank) : "—"}</div>
         </div>
       </div>
 
-      {current.notes && (
+      {viewed.notes && (
         <div className="field-hint" style={{ marginTop: "0.75rem" }}>
-          Notes: {current.notes}
+          Notes: {viewed.notes}
         </div>
       )}
 
-      {current.staff && current.staff.length > 0 && (
+      {viewed.staff && viewed.staff.length > 0 && (
         <table className="payout-table" style={{ marginTop: "1rem" }}>
           <thead>
             <tr>
@@ -263,7 +286,7 @@ function ReportDetail({
             </tr>
           </thead>
           <tbody>
-            {current.staff.map((s) => (
+            {viewed.staff.map((s) => (
               <tr key={s.user_id}>
                 <td>{s.name}</td>
                 <td className="hrs">{s.hours}</td>
@@ -280,27 +303,37 @@ function ReportDetail({
             Version History
           </div>
           {versions.map((v) => (
-            <div key={v.id} className="version-history-row">
+            <div
+              key={v.id}
+              className={`version-history-row ${v.id === viewed.id ? "active" : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectVersion(v.id);
+              }}
+            >
               v{v.version} — {new Date(v.created_at).toLocaleString()}{" "}
+              {v.id === latest.id && <span className="current-badge">Current</span>}
               {v.is_void && <span className="void-badge">Voided</span>}
             </div>
           ))}
         </div>
       )}
 
-      {!current.is_void && (
+      {!viewed.is_void && (
         <button
           className="btn-void"
-          disabled={voidingId === current.id}
+          disabled={voidingId === viewed.id}
           onClick={(e) => {
             e.stopPropagation();
-            onVoid(current.id);
+            onVoid(viewed.id);
           }}
         >
-          {voidingId === current.id
+          {voidingId === viewed.id
             ? "Voiding…"
-            : confirmingVoidId === current.id
+            : confirmingVoidId === viewed.id
             ? "Confirm Void?"
+            : isSuperseded
+            ? `Void v${viewed.version}`
             : "Void Report"}
         </button>
       )}
