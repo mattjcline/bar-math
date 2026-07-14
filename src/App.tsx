@@ -671,6 +671,10 @@ export default function App() {
             </div>
           )}
         </div>
+
+        <div className="app-footer">
+          <a href="?admin" className="footer-link">Admin →</a>
+        </div>
       </div>
   );
 }

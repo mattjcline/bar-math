@@ -81,6 +81,20 @@ body {
 
 .btn-signout:hover { color: #8080d0; }
 
+.app-footer {
+  text-align: center;
+  margin-top: 8px;
+}
+
+.footer-link {
+  color: #5a5a6e;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+}
+
+.footer-link:hover { color: #8080d0; }
+
 /* Admin tabs */
 .tab-bar {
   display: flex;
