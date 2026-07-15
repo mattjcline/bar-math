@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "./supabase";
 import { customRound, fmt, fmtInt, getDefaultDate, nameKey, type Bar, type StaffUser } from "./utils";
+import NameAutocomplete from "./NameAutocomplete";
 import "./App.css";
 
 const defaultBartenders = [
@@ -112,6 +113,7 @@ export default function App() {
   const hasZeroHourWarning = bartenders.some(
     (b) => nameKey(b.name) !== "" && (parseFloat(b.hours) || 0) === 0,
   );
+  const activeNames = users.map((u) => u.name);
 
   const canSave =
     !saving &&
@@ -284,12 +286,11 @@ export default function App() {
 
             <div className="closing-field">
               <label>Closing:</label>
-              <input
-                type="text"
-                list="known-users"
-                placeholder="Your name"
+              <NameAutocomplete
                 value={closingName}
-                onChange={(e) => setClosingName(e.target.value)}
+                onChange={setClosingName}
+                suggestions={activeNames}
+                placeholder="Your name"
               />
             </div>
 
@@ -309,12 +310,6 @@ export default function App() {
               </div>
             </div>
           </div>
-
-          <datalist id="known-users">
-            {users.map((u) => (
-              <option key={u.id} value={u.name} />
-            ))}
-          </datalist>
 
           {loadError && <div className="field-hint error">{loadError}</div>}
         </div>
@@ -416,14 +411,11 @@ export default function App() {
                 .join(" ");
               return (
                 <div className={rowClass} key={b.id}>
-                  <input
-                    type="text"
-                    list="known-users"
-                    placeholder="Bartender name"
+                  <NameAutocomplete
                     value={b.name}
-                    onChange={(e) =>
-                      updateBartender(b.id, "name", e.target.value)
-                    }
+                    onChange={(v) => updateBartender(b.id, "name", v)}
+                    suggestions={activeNames}
+                    placeholder="Bartender name"
                   />
                   <input
                     type="number"
