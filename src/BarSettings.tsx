@@ -1,16 +1,19 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import type { KitchenTipMethod } from "./utils";
 
 type Bar = {
   id: string;
   name: string;
   kitchen_tip_percentage: number | null;
+  kitchen_tip_method: KitchenTipMethod;
   webhook_url: string | null;
   webhook_delta_threshold: number | null;
 };
 
 type Draft = {
   kitchenTipPct: string;
+  kitchenTipMethod: KitchenTipMethod;
   webhookUrl: string;
   webhookThreshold: string;
 };
@@ -19,6 +22,7 @@ type SaveState = { status: "success" | "error"; message?: string };
 
 const toDraft = (bar: Bar): Draft => ({
   kitchenTipPct: bar.kitchen_tip_percentage != null ? String(bar.kitchen_tip_percentage) : "",
+  kitchenTipMethod: bar.kitchen_tip_method,
   webhookUrl: bar.webhook_url ?? "",
   webhookThreshold: bar.webhook_delta_threshold != null ? String(bar.webhook_delta_threshold) : "",
 });
@@ -34,7 +38,7 @@ export default function BarSettings() {
   useEffect(() => {
     supabase
       .from("bars")
-      .select("id, name, kitchen_tip_percentage, webhook_url, webhook_delta_threshold")
+      .select("id, name, kitchen_tip_percentage, kitchen_tip_method, webhook_url, webhook_delta_threshold")
       .order("name")
       .then(({ data, error }) => {
         if (error) {
@@ -74,11 +78,12 @@ export default function BarSettings() {
       .from("bars")
       .update({
         kitchen_tip_percentage: pct,
+        kitchen_tip_method: draft.kitchenTipMethod,
         webhook_url: draft.webhookUrl.trim() === "" ? null : draft.webhookUrl.trim(),
         webhook_delta_threshold: threshold,
       })
       .eq("id", barId)
-      .select("id, name, kitchen_tip_percentage, webhook_url, webhook_delta_threshold")
+      .select("id, name, kitchen_tip_percentage, kitchen_tip_method, webhook_url, webhook_delta_threshold")
       .single();
     setSavingId(null);
 
@@ -120,6 +125,19 @@ export default function BarSettings() {
                   value={draft.kitchenTipPct}
                   onChange={(e) => updateDraft(bar.id, { kitchenTipPct: e.target.value })}
                 />
+              </div>
+
+              <div className="field" style={{ maxWidth: "260px" }}>
+                <label>Kitchen Tip-Out Calculation</label>
+                <select
+                  value={draft.kitchenTipMethod}
+                  onChange={(e) =>
+                    updateDraft(bar.id, { kitchenTipMethod: e.target.value as KitchenTipMethod })
+                  }
+                >
+                  <option value="percentage_of_tips">% of Tips</option>
+                  <option value="percentage_of_gross_kitchen_sales">% of Gross Kitchen Sales</option>
+                </select>
               </div>
 
               <div className="field">
