@@ -1,3 +1,5 @@
+import Fuse from "fuse.js";
+
 export type Bar = { id: string; name: string; kitchen_tip_percentage: number | null };
 export type StaffUser = { id: string; name: string };
 
@@ -32,4 +34,10 @@ export function getDefaultDate() {
 
 export function nameKey(name: string) {
   return name.trim().toLowerCase();
+}
+
+export function filterSuggestions(suggestions: string[], query: string): string[] {
+  if (query.trim() === "") return suggestions;
+  const fuse = new Fuse(suggestions, { threshold: 0.4 });
+  return fuse.search(query).map((result) => result.item);
 }
