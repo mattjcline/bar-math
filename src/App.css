@@ -759,3 +759,39 @@ body {
   width: auto;
   padding: 0.3rem 0.5rem;
 }
+
+/* Name autocomplete */
+.autocomplete {
+  position: relative;
+}
+
+.autocomplete-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 20;
+  margin: 0.25rem 0 0;
+  padding: 0.3rem;
+  list-style: none;
+  background: #14141a;
+  border: 1px solid #2a2a36;
+  border-radius: 5px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.autocomplete-option {
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.9rem;
+  color: #e0e0ec;
+  cursor: pointer;
+}
+
+.autocomplete-option:hover,
+.autocomplete-option.highlighted {
+  background: #5050a0;
+  color: #fff;
+}
