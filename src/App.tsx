@@ -1,6 +1,18 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "./supabase";
-import { customRound, fmt, fmtInt, getDefaultDate, nameKey, type Bar, type StaffUser } from "./utils";
+import {
+  computeKitchenTipAmount,
+  customRound,
+  fmt,
+  fmtInt,
+  getDefaultDate,
+  kitchenTipPoolCaption,
+  kitchenTipShortCaption,
+  nameKey,
+  type Bar,
+  type KitchenTipMethod,
+  type StaffUser,
+} from "./utils";
 import NameAutocomplete from "./NameAutocomplete";
 import "./App.css";
 
@@ -25,6 +37,7 @@ export default function App() {
   const [cashSales, setCashSales] = useState("");
   const [creditSales, setCreditSales] = useState("");
   const [amBank, setAmBank] = useState("400");
+  const [grossKitchenSales, setGrossKitchenSales] = useState("");
   const [bartenders, setBartenders] = useState(defaultBartenders);
   const [notes, setNotes] = useState("");
   const [shiftDate, setShiftDate] = useState(getDefaultDate);
@@ -43,7 +56,7 @@ export default function App() {
     if (!unlocked) return;
     (async () => {
       const [barsRes, usersRes] = await Promise.all([
-        supabase.from("bars").select("id, name, kitchen_tip_percentage").order("name"),
+        supabase.from("bars").select("id, name, kitchen_tip_percentage, kitchen_tip_method").order("name"),
         supabase.from("users").select("id, name").eq("is_active", true).order("name"),
       ]);
       if (barsRes.error || usersRes.error) {
@@ -73,6 +86,7 @@ export default function App() {
   const cashSalesVal = parseFloat(cashSales) || 0;
   const creditSalesVal = parseFloat(creditSales) || 0;
   const amBankVal = parseFloat(amBank) || 0;
+  const grossKitchenSalesVal = parseFloat(grossKitchenSales) || 0;
 
   const totalTips = ccVal + cashTipsVal;
   const totalSales = cashSalesVal + creditSalesVal;
@@ -84,7 +98,9 @@ export default function App() {
 
   const selectedBar = bars.find((b) => b.id === selectedBarId);
   const kitchenTipPct = selectedBar?.kitchen_tip_percentage ?? 0;
-  const kitchenTipAmount = totalTips * kitchenTipPct / 100;
+  const kitchenTipMethod: KitchenTipMethod = selectedBar?.kitchen_tip_method ?? "percentage_of_tips";
+  const usesGrossKitchenSales = kitchenTipMethod === "percentage_of_gross_kitchen_sales";
+  const kitchenTipAmount = computeKitchenTipAmount(kitchenTipMethod, kitchenTipPct, totalTips, grossKitchenSalesVal);
   const tipPool = totalTips - kitchenTipAmount;
   const hourlyRate = totalHours > 0 ? tipPool / totalHours : 0;
   const expectedTill = cashSalesVal + amBankVal;
@@ -120,7 +136,8 @@ export default function App() {
     selectedBarId !== "" &&
     closingName.trim() !== "" &&
     deltaSeverity !== "blocked" &&
-    !hasDuplicateNames;
+    !hasDuplicateNames &&
+    (!usesGrossKitchenSales || grossKitchenSales.trim() !== "");
 
   const handleSave = async () => {
     if (!canSave) return;
@@ -199,6 +216,8 @@ export default function App() {
           total_tips: totalTips,
           hourly_rate: hourlyRate,
           kitchen_tip_percentage: kitchenTipPct,
+          kitchen_tip_method: kitchenTipMethod,
+          gross_kitchen_sales: usesGrossKitchenSales ? grossKitchenSalesVal : null,
           till_delta: hasTill ? delta : null,
           notes: notes.trim() === "" ? null : notes.trim(),
         })
@@ -340,6 +359,22 @@ export default function App() {
                 onChange={(e) => setCashTips(e.target.value)}
               />
             </div>
+            {usesGrossKitchenSales && (
+              <div className="field">
+                <label>Gross Kitchen Sales</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={grossKitchenSales}
+                  onChange={(e) => setGrossKitchenSales(e.target.value)}
+                />
+                <div className="field-hint">
+                  {selectedBar?.name}'s kitchen tip-out is {kitchenTipPct}% of this.
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="card">
@@ -489,7 +524,7 @@ export default function App() {
                   fontFamily: "'IBM Plex Mono', monospace",
                 }}
               >
-                {kitchenTipPct}% off the top
+                {kitchenTipShortCaption(kitchenTipMethod, kitchenTipPct)}
               </div>
             )}
           </div>
@@ -519,7 +554,7 @@ export default function App() {
                   fontFamily: "'IBM Plex Mono', monospace",
                 }}
               >
-                Pool: {fmt(tipPool)} after {kitchenTipPct}% kitchen tip-out
+                Pool: {fmt(tipPool)} after {kitchenTipPoolCaption(kitchenTipMethod, kitchenTipPct)}
               </div>
             )}
           </div>
@@ -650,6 +685,9 @@ export default function App() {
               {closingName.trim() === "" && <div>• Enter who's closing</div>}
               {hasDuplicateNames && <div>• Fix duplicate bartender names</div>}
               {deltaSeverity === "blocked" && <div>• Till delta exceeds ±$400</div>}
+              {usesGrossKitchenSales && grossKitchenSales.trim() === "" && (
+                <div>• Enter gross kitchen sales</div>
+              )}
             </div>
           )}
           {saveError && <div className="save-status error">{saveError}</div>}
