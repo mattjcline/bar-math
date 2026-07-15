@@ -130,6 +130,8 @@ export default function BarSettings() {
               <div className="field" style={{ maxWidth: "260px" }}>
                 <label>Kitchen Tip-Out Calculation</label>
                 <select
+                  className="bar-select"
+                  style={{ width: "100%" }}
                   value={draft.kitchenTipMethod}
                   onChange={(e) =>
                     updateDraft(bar.id, { kitchenTipMethod: e.target.value as KitchenTipMethod })

@@ -159,8 +159,7 @@ body {
   margin-bottom: 0.3rem;
 }
 
-.field input,
-.field select {
+.field input {
   width: 100%;
   background: #0d0d0f;
   border: 1px solid #2a2a36;
@@ -173,8 +172,7 @@ body {
   transition: border-color 0.15s;
 }
 
-.field input:focus,
-.field select:focus {
+.field input:focus {
   border-color: #5050a0;
 }
 
