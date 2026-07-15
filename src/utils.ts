@@ -1,6 +1,8 @@
 import Fuse from "fuse.js";
 
-export type Bar = { id: string; name: string; kitchen_tip_percentage: number | null };
+export type KitchenTipMethod = "percentage_of_tips" | "percentage_of_gross_kitchen_sales";
+
+export type Bar = { id: string; name: string; kitchen_tip_percentage: number | null; kitchen_tip_method: KitchenTipMethod };
 export type StaffUser = { id: string; name: string };
 
 export function customRound(val: number) {
@@ -17,6 +19,40 @@ export function fmt(val: number) {
       maximumFractionDigits: 2,
     })
   );
+}
+
+export function computeKitchenTipAmount(
+  method: KitchenTipMethod,
+  percentage: number,
+  totalTips: number,
+  grossKitchenSales: number,
+): number {
+  const base = method === "percentage_of_gross_kitchen_sales" ? grossKitchenSales : totalTips;
+  return (base * percentage) / 100;
+}
+
+export function kitchenTipShortCaption(method: KitchenTipMethod, percentage: number): string {
+  return method === "percentage_of_gross_kitchen_sales"
+    ? `${percentage}% of gross kitchen sales`
+    : `${percentage}% off the top`;
+}
+
+export function kitchenTipPoolCaption(method: KitchenTipMethod, percentage: number): string {
+  return method === "percentage_of_gross_kitchen_sales"
+    ? `${percentage}% gross-kitchen-sales kitchen tip-out`
+    : `${percentage}% kitchen tip-out`;
+}
+
+export function kitchenTipReportLabel(
+  method: KitchenTipMethod,
+  percentage: number,
+  amount: number,
+  grossKitchenSales: number | null,
+): string {
+  if (method === "percentage_of_gross_kitchen_sales") {
+    return `${percentage}% of Gross Kitchen Sales (${fmt(grossKitchenSales ?? 0)}) = ${fmt(amount)}`;
+  }
+  return `${percentage}% (${fmt(amount)})`;
 }
 
 export function fmtInt(val: number) {
