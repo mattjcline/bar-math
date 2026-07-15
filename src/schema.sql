@@ -6,11 +6,15 @@ create table bars (
   name                     text not null,
   webhook_url              text,
   webhook_delta_threshold  numeric default 20,
-  kitchen_tip_percentage   numeric default 12
+  kitchen_tip_percentage   numeric default 12,
+  kitchen_tip_method       text not null default 'percentage_of_tips'
 );
 
 alter table bars add constraint kitchen_tip_percentage_range
   check (kitchen_tip_percentage between 0 and 100);
+
+alter table bars add constraint kitchen_tip_method_values
+  check (kitchen_tip_method in ('percentage_of_tips', 'percentage_of_gross_kitchen_sales'));
 
 create table users (
   id            uuid primary key default gen_random_uuid(),
@@ -52,6 +56,8 @@ create table reports (
   notes        text,
   webhook_sent boolean default false,
   kitchen_tip_percentage numeric,
+  kitchen_tip_method text not null default 'percentage_of_tips',
+  gross_kitchen_sales numeric,
   total_sales  numeric generated always as (
     coalesce(cash_sales, 0) + coalesce(credit_sales, 0)
   ) stored,
@@ -62,9 +68,16 @@ create table reports (
     else null end
   ) stored,
   kitchen_tip_amount numeric generated always as (
-    coalesce(total_tips, 0) * coalesce(kitchen_tip_percentage, 0) / 100
+    case
+      when kitchen_tip_method = 'percentage_of_gross_kitchen_sales'
+        then coalesce(gross_kitchen_sales, 0) * coalesce(kitchen_tip_percentage, 0) / 100
+      else coalesce(total_tips, 0) * coalesce(kitchen_tip_percentage, 0) / 100
+    end
   ) stored
 );
+
+alter table reports add constraint kitchen_tip_method_values
+  check (kitchen_tip_method in ('percentage_of_tips', 'percentage_of_gross_kitchen_sales'));
 
 alter table reports add constraint till_delta_floor
   check (till_delta between -400 and 400);
