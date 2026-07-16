@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import AdminUsers from "./AdminUsers";
 
 type Bartender = {
   id: string;
@@ -133,6 +134,7 @@ export default function Staff() {
   });
 
   return (
+    <>
     <div className="card full-width">
       <div className="card-title">Staff</div>
 
@@ -240,5 +242,7 @@ export default function Staff() {
           );
         })}
     </div>
+    <AdminUsers />
+    </>
   );
 }

@@ -44,18 +44,34 @@ export default function Admin() {
         if (active) setSession(null);
         return;
       }
-      const { data } = await supabase
+      let { data } = await supabase
         .from("users")
-        .select("name, role")
+        .select("name, role, is_active")
         .eq("auth_user_id", authUserId)
         .maybeSingle();
+
+      if (!data) {
+        // Not linked yet -- self-link-on-first-login: claim an invited row
+        // matching this email, if one exists and hasn't been claimed
+        // already. Scoped by the "claim invited user row" RLS policy, not
+        // just this query, so this is safe even against a crafted request.
+        const { data: claimed } = await supabase
+          .from("users")
+          .update({ auth_user_id: authUserId })
+          .is("auth_user_id", null)
+          .eq("email", userEmail.toLowerCase())
+          .select("name, role, is_active")
+          .maybeSingle();
+        data = claimed ?? null;
+      }
+
       if (!active) return;
       const role = data?.role ?? null;
       setSession({
         email: userEmail,
         name: data?.name ?? null,
         role,
-        isAuthorized: role === "admin" || role === "manager",
+        isAuthorized: data?.is_active === true && (role === "admin" || role === "manager"),
       });
     };
 

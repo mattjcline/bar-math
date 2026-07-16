@@ -19,11 +19,17 @@ alter table bars add constraint kitchen_tip_method_values
 create table users (
   id            uuid primary key default gen_random_uuid(),
   name          text not null,
+  -- Only set for admin/manager rows -- what an invite is addressed to,
+  -- and what a signed-in user's own claim policy matches against.
+  email         text unique,
   role          text check (role in ('bartender', 'manager', 'admin')) default 'bartender',
   is_active     boolean default true,
   created_at    timestamptz default now(),
   -- Only set for the handful of people with real admin-panel logins
-  -- (Supabase Auth magic link). Regular auto-created staff never get one.
+  -- (Supabase Auth OTP). Regular auto-created staff never get one, and
+  -- an invited admin/manager doesn't either until they sign in for the
+  -- first time and self-claim their row (see "claim invited user row"
+  -- in policies.sql).
   auth_user_id  uuid references auth.users(id) unique
 );
 

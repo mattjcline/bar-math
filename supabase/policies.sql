@@ -49,8 +49,46 @@ create policy "update bars" on bars
 create policy "read users" on users
   for select to anon, authenticated using (true);
 
-create policy "create users" on users
-  for insert to anon, authenticated with check (true);
+-- Anyone (including the unauthenticated calculator) can auto-create a
+-- bartender row on first save, same as before this policy was split --
+-- but NOT an admin/manager role. That distinction didn't matter while
+-- role was just a label, but it becomes a real privilege-escalation
+-- hole once "claim invited user row" below lets a signed-in user link
+-- themselves to any unclaimed row matching their email: without this
+-- check, an attacker could insert their own admin-role row and then
+-- self-claim it.
+create policy "create bartender" on users
+  for insert to anon, authenticated
+  with check (role = 'bartender');
+
+-- Inviting an admin/manager is itself an admin-panel action, gated the
+-- same way as the other admin/manager writes below.
+create policy "invite admin or manager" on users
+  for insert to authenticated
+  with check (
+    role in ('admin', 'manager')
+    and exists (
+      select 1 from users u
+      where u.auth_user_id = auth.uid()
+        and u.role in ('admin', 'manager')
+    )
+  );
+
+-- The "self-link-on-first-login" half of onboarding: lets a signed-in
+-- user claim their own invited row without an existing admin having to
+-- do it for them. Scoped tightly on purpose (unlike the coarser
+-- role-only checks elsewhere in this file) -- only rows with no
+-- auth_user_id yet, only by exact (case-insensitive) email match
+-- against their own verified JWT, and the check clause only allows
+-- auth_user_id to be set to their own id.
+create policy "claim invited user row" on users
+  for update to authenticated
+  using (
+    auth_user_id is null
+    and email is not null
+    and lower(email) = lower(auth.jwt() ->> 'email')
+  )
+  with check (auth_user_id = auth.uid());
 
 -- Editing a bartender's name/active status is gated to admins/managers,
 -- same role check used elsewhere. Note this checks role only, not which
