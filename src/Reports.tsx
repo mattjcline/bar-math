@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
-import { fmt, fmtInt } from "./utils";
+import { fmt, fmtInt, kitchenTipReportLabel, type KitchenTipMethod } from "./utils";
 
 type StaffPayout = { user_id: string; name: string; hours: number; payout: number };
 
@@ -18,6 +18,8 @@ type ReportRow = {
   till_delta: number | null;
   kitchen_tip_percentage: number | null;
   kitchen_tip_amount: number | null;
+  kitchen_tip_method: KitchenTipMethod;
+  gross_kitchen_sales: number | null;
   notes: string | null;
   created_at: string;
   bars: { name: string } | null;
@@ -59,7 +61,7 @@ export default function Reports() {
     let query = supabase
       .from("reports")
       .select(
-        "id, shift_date, version, is_void, bar_id, till, am_bank, staff, total_tips, hourly_rate, till_delta, kitchen_tip_percentage, kitchen_tip_amount, notes, created_at, bars(name), users(name)"
+        "id, shift_date, version, is_void, bar_id, till, am_bank, staff, total_tips, hourly_rate, till_delta, kitchen_tip_percentage, kitchen_tip_amount, kitchen_tip_method, gross_kitchen_sales, notes, created_at, bars(name), users(name)"
       )
       .order("shift_date", { ascending: false })
       .order("version", { ascending: false });
@@ -248,7 +250,12 @@ function ReportDetail({
           <div className="result-label">Kitchen Tip-Out</div>
           <div>
             {viewed.kitchen_tip_percentage != null
-              ? `${viewed.kitchen_tip_percentage}% (${fmt(viewed.kitchen_tip_amount ?? 0)})`
+              ? kitchenTipReportLabel(
+                  viewed.kitchen_tip_method,
+                  viewed.kitchen_tip_percentage,
+                  viewed.kitchen_tip_amount ?? 0,
+                  viewed.gross_kitchen_sales,
+                )
               : "—"}
           </div>
         </div>
