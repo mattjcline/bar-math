@@ -394,6 +394,7 @@ body {
 }
 
 .bar-select:focus { border-color: #5050a0; }
+.bar-select:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .closing-field {
   display: flex;
@@ -675,6 +676,25 @@ body {
 
 .btn-void:hover:not(:disabled) { background: #2a0f0f; }
 .btn-void:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-edit {
+  background: none;
+  border: 1px solid #2a2a44;
+  border-radius: 6px;
+  color: #5050a0;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 1rem;
+  margin-top: 1rem;
+  margin-right: 0.5rem;
+  display: inline-block;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn-edit:hover { border-color: #5050a0; color: #8080d0; background: #14141f; }
 
 /* Staff */
 .staff-filters {

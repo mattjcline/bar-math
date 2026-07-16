@@ -25,6 +25,24 @@ const defaultBartenders = [
 
 let nextId = 4;
 
+type EditableReport = {
+  version: number;
+  shift_date: string;
+  bar_id: string;
+  cc_tips: number | null;
+  cash_tips: number | null;
+  till: number | null;
+  cash_sales: number | null;
+  credit_sales: number | null;
+  am_bank: number | null;
+  gross_kitchen_sales: number | null;
+  staff: { user_id: string; name: string; hours: number; payout: number }[] | null;
+  notes: string | null;
+  is_void: boolean;
+  bars: { name: string } | null;
+  users: { name: string } | null;
+};
+
 const UNLOCK_KEY = "bar-math-unlocked";
 
 export default function App() {
@@ -53,6 +71,10 @@ export default function App() {
   const [saveError, setSaveError] = useState("");
   const [saveInfo, setSaveInfo] = useState<{ version: number; savedAt: string } | null>(null);
 
+  const editReportId = new URLSearchParams(window.location.search).get("editReport");
+  const [editingReport, setEditingReport] = useState<{ version: number; barName: string; shiftDate: string } | null>(null);
+  const [editLoadError, setEditLoadError] = useState("");
+
   useEffect(() => {
     if (!unlocked) return;
     (async () => {
@@ -67,9 +89,47 @@ export default function App() {
       setBars(barsRes.data ?? []);
       setUsers(usersRes.data ?? []);
       const defaultBar = (barsRes.data ?? []).find((b) => b.name === "Louie's");
-      if (defaultBar) setSelectedBarId(defaultBar.id);
+      if (defaultBar && !editReportId) setSelectedBarId(defaultBar.id);
     })();
-  }, [unlocked]);
+  }, [unlocked, editReportId]);
+
+  useEffect(() => {
+    if (!unlocked || !editReportId) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from("reports")
+        .select(
+          "id, version, shift_date, bar_id, cc_tips, cash_tips, till, cash_sales, credit_sales, am_bank, gross_kitchen_sales, staff, notes, is_void, bars(name), users(name)"
+        )
+        .eq("id", editReportId)
+        .single();
+      const report = data as EditableReport | null;
+      if (error || !report) {
+        setEditLoadError("Couldn't load that report to edit — check the link or try again.");
+        return;
+      }
+      if (report.is_void) {
+        setEditLoadError("This report has been voided and can't be edited.");
+        return;
+      }
+      setSelectedBarId(report.bar_id);
+      setShiftDate(report.shift_date);
+      setCcTips(report.cc_tips != null ? String(report.cc_tips) : "");
+      setCashTips(report.cash_tips != null ? String(report.cash_tips) : "");
+      setTill(report.till != null ? String(report.till) : "");
+      setCashSales(report.cash_sales != null ? String(report.cash_sales) : "");
+      setCreditSales(report.credit_sales != null ? String(report.credit_sales) : "");
+      setAmBank(report.am_bank != null ? String(report.am_bank) : "400");
+      setGrossKitchenSales(report.gross_kitchen_sales != null ? String(report.gross_kitchen_sales) : "");
+      setNotes(report.notes ?? "");
+      setClosingName(report.users?.name ?? "");
+      const staff = report.staff ?? [];
+      setBartenders(
+        staff.length > 0 ? staff.map((s) => ({ id: nextId++, name: s.name, hours: String(s.hours) })) : defaultBartenders,
+      );
+      setEditingReport({ version: report.version, barName: report.bars?.name ?? "", shiftDate: report.shift_date });
+    })();
+  }, [unlocked, editReportId]);
 
   const handleUnlockSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -292,6 +352,7 @@ export default function App() {
               className="bar-select"
               value={selectedBarId}
               onChange={(e) => setSelectedBarId(e.target.value)}
+              disabled={!!editingReport}
             >
               <option value="" disabled>
                 Select bar…
@@ -325,11 +386,25 @@ export default function App() {
                   onChange={(e) => setShiftDate(e.target.value)}
                   onClick={(e) => e.currentTarget.showPicker?.()}
                   className="date-input-overlay"
+                  disabled={!!editingReport}
                 />
               </div>
             </div>
           </div>
 
+          {editingReport && (
+            <div className="superseded-banner">
+              Editing v{editingReport.version} of {editingReport.barName} —{" "}
+              {new Date(editingReport.shiftDate + "T00:00:00").toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+              . Saving adds a new version — it won't overwrite this one. Bar and date are locked while editing.
+            </div>
+          )}
+          {editLoadError && <div className="field-hint error">{editLoadError}</div>}
           {loadError && <div className="field-hint error">{loadError}</div>}
         </div>
 
@@ -677,7 +752,7 @@ export default function App() {
 
         <div className="save-bar">
           <button className="btn-save" disabled={!canSave} onClick={handleSave}>
-            {saving ? "Saving…" : "Save Report"}
+            {saving ? "Saving…" : editingReport ? "Save New Version" : "Save Report"}
           </button>
           {!canSave && !saving && (
             <div className="validation-list">

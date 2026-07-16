@@ -330,6 +330,16 @@ function ReportDetail({
         </div>
       )}
 
+      {!isSuperseded && !viewed.is_void && (
+        <a
+          className="btn-edit"
+          href={`${window.location.origin}${window.location.pathname}?editReport=${viewed.id}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          Edit This Report
+        </a>
+      )}
+
       {!viewed.is_void && (
         <button
           className="btn-void"
