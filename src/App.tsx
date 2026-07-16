@@ -497,6 +497,7 @@ export default function App() {
                 value={till}
                 onChange={(e) => setTill(e.target.value)}
               />
+              <div className="field-hint">Expected: {fmt(expectedTill)} (Cash Sales + AM Bank)</div>
             </div>
           </div>
 
