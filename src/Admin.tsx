@@ -12,18 +12,27 @@ type AdminSession = {
   isAuthorized: boolean;
 };
 
-function adminRedirectUrl() {
-  return `${window.location.origin}${window.location.pathname}?admin`;
-}
-
 type Tab = "reports" | "settings" | "staff";
+
+// supabase-js treats any 5xx response as "retryable" and stringifies the raw
+// fetch Response instead of reading its JSON body, so .message ends up as the
+// unhelpful literal string "{}" whenever the server errors (e.g. a broken
+// SMTP/email-provider config) rather than rejecting the request itself.
+function friendlyAuthErrorMessage(err: { name?: string; message: string }): string {
+  if (err.name === "AuthRetryableFetchError") {
+    return "Couldn't reach Supabase to send that — check the email server (SMTP) configuration and try again.";
+  }
+  return err.message;
+}
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<AdminSession | null>(null);
   const [email, setEmail] = useState("");
-  const [linkSent, setLinkSent] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const [code, setCode] = useState("");
   const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("reports");
 
@@ -66,26 +75,47 @@ export default function Admin() {
     };
   }, []);
 
-  const handleSendLink = async (e: FormEvent) => {
+  const handleSendCode = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     setSending(true);
     const { error: sendError } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: adminRedirectUrl() },
     });
     setSending(false);
     if (sendError) {
-      setError(sendError.message);
+      setError(friendlyAuthErrorMessage(sendError));
       return;
     }
-    setLinkSent(true);
+    setCodeSent(true);
+  };
+
+  const handleVerifyCode = async (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setVerifying(true);
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: code.trim(),
+      type: "email",
+    });
+    setVerifying(false);
+    if (verifyError) {
+      setError(friendlyAuthErrorMessage(verifyError));
+    }
+  };
+
+  const useDifferentEmail = () => {
+    setCodeSent(false);
+    setCode("");
+    setError("");
   };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setSession(null);
-    setLinkSent(false);
+    setCodeSent(false);
+    setCode("");
     setEmail("");
   };
 
@@ -115,10 +145,38 @@ export default function Admin() {
       {!session && (
         <div className="card" style={{ maxWidth: "360px" }}>
           <div className="card-title">Sign In</div>
-          {linkSent ? (
-            <div className="field-hint">Check your email for a sign-in link.</div>
+          {codeSent ? (
+            <form onSubmit={handleVerifyCode}>
+              <div className="field-hint" style={{ marginBottom: "0.75rem" }}>
+                Check your email for a code.
+              </div>
+              <div className="field">
+                <label>Code</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Code from your email"
+                  autoFocus
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  required
+                />
+              </div>
+              <button type="submit" className="btn-save" disabled={verifying}>
+                {verifying ? "Verifying…" : "Verify Code"}
+              </button>
+              {error && <div className="field-hint error">{error}</div>}
+              <button
+                type="button"
+                className="btn-signout"
+                style={{ display: "block", marginTop: "0.75rem" }}
+                onClick={useDifferentEmail}
+              >
+                Use a different email
+              </button>
+            </form>
           ) : (
-            <form onSubmit={handleSendLink}>
+            <form onSubmit={handleSendCode}>
               <div className="field">
                 <label>Email</label>
                 <input
@@ -131,7 +189,7 @@ export default function Admin() {
                 />
               </div>
               <button type="submit" className="btn-save" disabled={sending}>
-                {sending ? "Sending…" : "Send Magic Link"}
+                {sending ? "Sending…" : "Send Code"}
               </button>
               {error && <div className="field-hint error">{error}</div>}
             </form>
