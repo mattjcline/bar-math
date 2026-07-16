@@ -43,6 +43,17 @@ export function kitchenTipPoolCaption(method: KitchenTipMethod, percentage: numb
     : `${percentage}% kitchen tip-out`;
 }
 
+function possessive(name: string): string {
+  return name.endsWith("'s") ? name : `${name}'s`;
+}
+
+export function kitchenTipMechanismHint(barName: string, method: KitchenTipMethod, percentage: number): string {
+  const name = possessive(barName);
+  return method === "percentage_of_gross_kitchen_sales"
+    ? `${name} kitchen tip-out is ${percentage}% of this.`
+    : `${name} kitchen tip-out is ${percentage}% of total tips, not gross kitchen sales — this is recorded for reporting only.`;
+}
+
 export function kitchenTipReportLabel(
   method: KitchenTipMethod,
   percentage: number,

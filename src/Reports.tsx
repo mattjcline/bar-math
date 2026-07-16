@@ -260,6 +260,10 @@ function ReportDetail({
           </div>
         </div>
         <div>
+          <div className="result-label">Gross Kitchen Sales</div>
+          <div>{viewed.gross_kitchen_sales != null ? fmt(viewed.gross_kitchen_sales) : "—"}</div>
+        </div>
+        <div>
           <div className="result-label">Tip Pool</div>
           <div>{tipPool != null ? fmt(tipPool) : "—"}</div>
         </div>

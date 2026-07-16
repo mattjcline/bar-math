@@ -1,6 +1,7 @@
 import {
   computeKitchenTipAmount,
   filterSuggestions,
+  kitchenTipMechanismHint,
   kitchenTipPoolCaption,
   kitchenTipReportLabel,
   kitchenTipShortCaption,
@@ -63,6 +64,20 @@ describe("kitchenTipPoolCaption", () => {
   it("calls out the gross-kitchen-sales basis", () => {
     expect(kitchenTipPoolCaption("percentage_of_gross_kitchen_sales", 10)).toBe(
       "10% gross-kitchen-sales kitchen tip-out"
+    );
+  });
+});
+
+describe("kitchenTipMechanismHint", () => {
+  it("explains the gross-kitchen-sales mechanism for that method", () => {
+    expect(kitchenTipMechanismHint("Tempest", "percentage_of_gross_kitchen_sales", 10)).toBe(
+      "Tempest's kitchen tip-out is 10% of this."
+    );
+  });
+
+  it("clarifies that percentage_of_tips bars don't use this figure for tip-out", () => {
+    expect(kitchenTipMechanismHint("Louie's", "percentage_of_tips", 12)).toBe(
+      "Louie's kitchen tip-out is 12% of total tips, not gross kitchen sales — this is recorded for reporting only."
     );
   });
 });

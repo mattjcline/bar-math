@@ -6,6 +6,7 @@ import {
   fmt,
   fmtInt,
   getDefaultDate,
+  kitchenTipMechanismHint,
   kitchenTipPoolCaption,
   kitchenTipShortCaption,
   nameKey,
@@ -99,7 +100,6 @@ export default function App() {
   const selectedBar = bars.find((b) => b.id === selectedBarId);
   const kitchenTipPct = selectedBar?.kitchen_tip_percentage ?? 0;
   const kitchenTipMethod: KitchenTipMethod = selectedBar?.kitchen_tip_method ?? "percentage_of_tips";
-  const usesGrossKitchenSales = kitchenTipMethod === "percentage_of_gross_kitchen_sales";
   const kitchenTipAmount = computeKitchenTipAmount(kitchenTipMethod, kitchenTipPct, totalTips, grossKitchenSalesVal);
   const tipPool = totalTips - kitchenTipAmount;
   const hourlyRate = totalHours > 0 ? tipPool / totalHours : 0;
@@ -137,7 +137,7 @@ export default function App() {
     closingName.trim() !== "" &&
     deltaSeverity !== "blocked" &&
     !hasDuplicateNames &&
-    (!usesGrossKitchenSales || grossKitchenSales.trim() !== "");
+    grossKitchenSales.trim() !== "";
 
   const handleSave = async () => {
     if (!canSave) return;
@@ -217,7 +217,7 @@ export default function App() {
           hourly_rate: hourlyRate,
           kitchen_tip_percentage: kitchenTipPct,
           kitchen_tip_method: kitchenTipMethod,
-          gross_kitchen_sales: usesGrossKitchenSales ? grossKitchenSalesVal : null,
+          gross_kitchen_sales: grossKitchenSalesVal,
           till_delta: hasTill ? delta : null,
           notes: notes.trim() === "" ? null : notes.trim(),
         })
@@ -359,22 +359,22 @@ export default function App() {
                 onChange={(e) => setCashTips(e.target.value)}
               />
             </div>
-            {usesGrossKitchenSales && (
-              <div className="field">
-                <label>Gross Kitchen Sales</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={grossKitchenSales}
-                  onChange={(e) => setGrossKitchenSales(e.target.value)}
-                />
+            <div className="field">
+              <label>Gross Kitchen Sales</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={grossKitchenSales}
+                onChange={(e) => setGrossKitchenSales(e.target.value)}
+              />
+              {selectedBar && (
                 <div className="field-hint">
-                  {selectedBar?.name}'s kitchen tip-out is {kitchenTipPct}% of this.
+                  {kitchenTipMechanismHint(selectedBar.name, kitchenTipMethod, kitchenTipPct)}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           <div className="card">
@@ -685,7 +685,7 @@ export default function App() {
               {closingName.trim() === "" && <div>• Enter who's closing</div>}
               {hasDuplicateNames && <div>• Fix duplicate bartender names</div>}
               {deltaSeverity === "blocked" && <div>• Till delta exceeds ±$400</div>}
-              {usesGrossKitchenSales && grossKitchenSales.trim() === "" && (
+              {grossKitchenSales.trim() === "" && (
                 <div>• Enter gross kitchen sales</div>
               )}
             </div>
