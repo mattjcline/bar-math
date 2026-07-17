@@ -124,6 +124,60 @@ export default function Reports() {
     await loadReports();
   };
 
+  const handleUnvoid = async (reportId: string, barId: string, shiftDate: string) => {
+    if (confirmingVoidId !== reportId) {
+      setConfirmingVoidId(reportId);
+      return;
+    }
+    setVoidingId(reportId);
+    setVoidError("");
+
+    // Voiding never touches is_current, so a voided row can still carry
+    // is_current = true from before it was voided. If a fresh report has
+    // since been saved for the same bar+date (handleSave starts a new
+    // version thread once the old one is voided, since voided rows are
+    // excluded from version-counting), un-voiding this row straight would
+    // collide with the "one current, non-void report per bar+date" DB
+    // constraint. Check for that conflict up front instead of surfacing
+    // whatever raw error Postgres would give.
+    const { data: conflict, error: conflictErr } = await supabase
+      .from("reports")
+      .select("version")
+      .eq("bar_id", barId)
+      .eq("shift_date", shiftDate)
+      .eq("is_current", true)
+      .eq("is_void", false)
+      .neq("id", reportId)
+      .maybeSingle();
+
+    if (conflictErr) {
+      setVoidingId(null);
+      setConfirmingVoidId(null);
+      setVoidError(conflictErr.message);
+      return;
+    }
+    if (conflict) {
+      setVoidingId(null);
+      setConfirmingVoidId(null);
+      setVoidError(
+        `Can't un-void — v${conflict.version} is already the current report for this date. Void that one first if you want to bring this version back.`,
+      );
+      return;
+    }
+
+    const { error: unvoidErr } = await supabase
+      .from("reports")
+      .update({ is_void: false })
+      .eq("id", reportId);
+    setVoidingId(null);
+    setConfirmingVoidId(null);
+    if (unvoidErr) {
+      setVoidError(unvoidErr.message);
+      return;
+    }
+    await loadReports();
+  };
+
   return (
     <div className="card full-width">
       <div className="card-title">Reports</div>
@@ -196,6 +250,7 @@ export default function Reports() {
                     confirmingVoidId={confirmingVoidId}
                     voidError={voidError}
                     onVoid={handleVoid}
+                    onUnvoid={handleUnvoid}
                   />
                 )}
               </div>
@@ -215,6 +270,7 @@ function ReportDetail({
   confirmingVoidId,
   voidError,
   onVoid,
+  onUnvoid,
 }: {
   versions: ReportRow[];
   viewedVersionId: string;
@@ -223,6 +279,7 @@ function ReportDetail({
   confirmingVoidId: string | null;
   voidError: string;
   onVoid: (id: string) => void;
+  onUnvoid: (id: string, barId: string, shiftDate: string) => void;
 }) {
   const latest = versions[0];
   const viewed = versions.find((v) => v.id === viewedVersionId) ?? latest;
@@ -340,7 +397,24 @@ function ReportDetail({
         </a>
       )}
 
-      {!viewed.is_void && (
+      {viewed.is_void ? (
+        <button
+          className="btn-edit"
+          disabled={voidingId === viewed.id}
+          onClick={(e) => {
+            e.stopPropagation();
+            onUnvoid(viewed.id, viewed.bar_id, viewed.shift_date);
+          }}
+        >
+          {voidingId === viewed.id
+            ? "Un-voiding…"
+            : confirmingVoidId === viewed.id
+            ? "Confirm Un-void?"
+            : isSuperseded
+            ? `Un-void v${viewed.version}`
+            : "Un-void Report"}
+        </button>
+      ) : (
         <button
           className="btn-void"
           disabled={voidingId === viewed.id}
