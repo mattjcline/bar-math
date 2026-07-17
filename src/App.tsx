@@ -239,12 +239,17 @@ export default function App() {
 
       setUsers(knownUsers);
 
+      // Deliberately not filtering out voided rows here: version numbers
+      // must stay unique per (bar_id, shift_date) even across a void, or a
+      // fresh save right after voiding the only existing report reuses
+      // version 1 instead of continuing to 2 -- two different rows both
+      // called "v1" for the same shift, with no reliable way to tell them
+      // apart by version number alone.
       const { data: existingRows, error: fetchErr } = await supabase
         .from("reports")
         .select("id, version, is_current")
         .eq("bar_id", selectedBarId)
         .eq("shift_date", shiftDate)
-        .eq("is_void", false)
         .order("version", { ascending: false });
       if (fetchErr) throw fetchErr;
 
