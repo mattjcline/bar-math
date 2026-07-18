@@ -80,7 +80,14 @@ export default function App() {
     (async () => {
       const [barsRes, usersRes] = await Promise.all([
         supabase.from("bars").select("id, name, kitchen_tip_percentage, kitchen_tip_method").order("name"),
-        supabase.from("users").select("id, name").eq("is_active", true).order("name"),
+        // Deliberately not filtering by is_active here: this is also the
+        // matching set resolveUser checks before creating a new user row,
+        // and it must include deactivated bartenders too, or re-entering
+        // an exact name that was deactivated silently creates a duplicate
+        // row instead of reusing/reactivating the original. Active-only
+        // filtering for the autocomplete suggestions happens separately,
+        // via activeNames below.
+        supabase.from("users").select("id, name, is_active").order("name"),
       ]);
       if (barsRes.error || usersRes.error) {
         setLoadError("Couldn't load bars or staff list — check your connection.");
@@ -189,7 +196,7 @@ export default function App() {
   const hasZeroHourWarning = bartenders.some(
     (b) => nameKey(b.name) !== "" && (parseFloat(b.hours) || 0) === 0,
   );
-  const activeNames = users.map((u) => u.name);
+  const activeNames = users.filter((u) => u.is_active).map((u) => u.name);
 
   const canSave =
     !saving &&
@@ -214,10 +221,10 @@ export default function App() {
         const { data, error } = await supabase
           .from("users")
           .insert({ name: trimmed })
-          .select("id, name")
+          .select("id, name, is_active")
           .single();
         if (error) throw error;
-        knownUsers = [...knownUsers, { id: data.id, name: data.name }];
+        knownUsers = [...knownUsers, { id: data.id, name: data.name, is_active: data.is_active }];
         await supabase.from("user_bars").insert({ user_id: data.id, bar_id: selectedBarId });
         return data.id;
       };
