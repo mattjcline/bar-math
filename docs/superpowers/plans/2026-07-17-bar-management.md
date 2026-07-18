@@ -1,7 +1,8 @@
 # Bar management (add / rename / remove) — GitHub issue #2
 
-> Status: planned, not yet implemented. Reviewed 2026-07-17; two corrections
-> from that review are already folded in below (the calculator-dropdown
+> Status: implemented and deployed 2026-07-18 (commit 3699020), closing
+> issues #2 and #4. Reviewed 2026-07-17; two corrections from that review
+> were folded in below before implementation (the calculator-dropdown
 > inactive-bar fix, tracked as issue #4, and the explicit `alter table`
 > migration SQL for the existing Supabase projects).
 
