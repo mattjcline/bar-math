@@ -8,7 +8,7 @@ type Bartender = {
   is_active: boolean;
 };
 
-type Bar = { id: string; name: string };
+type Bar = { id: string; name: string; is_active: boolean };
 
 type Draft = { name: string; isActive: boolean };
 type SaveState = { status: "success" | "error"; message?: string };
@@ -30,7 +30,7 @@ export default function Staff() {
   useEffect(() => {
     supabase
       .from("bars")
-      .select("id, name")
+      .select("id, name, is_active")
       .order("name")
       .then(({ data }) => setBars(data ?? []));
   }, []);
@@ -172,7 +172,7 @@ export default function Staff() {
           const draft = drafts[u.id];
           const state = saveState[u.id];
           const linkedBarIds = userBars[u.id] ?? [];
-          const availableBars = bars.filter((b) => !linkedBarIds.includes(b.id));
+          const availableBars = bars.filter((b) => !linkedBarIds.includes(b.id) && b.is_active);
           if (!draft) return null;
           return (
             <div key={u.id}>

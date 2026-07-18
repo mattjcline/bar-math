@@ -46,6 +46,18 @@ create policy "update bars" on bars
     )
   );
 
+-- Adding a new bar is an admin-panel action, gated the same way as the
+-- other admin/manager writes (e.g. "insert admin or manager", "update bars").
+create policy "insert bars" on bars
+  for insert to authenticated
+  with check (
+    exists (
+      select 1 from users u
+      where u.auth_user_id = auth.uid()
+        and u.role in ('admin', 'manager')
+    )
+  );
+
 create policy "read users" on users
   for select to anon, authenticated using (true);
 

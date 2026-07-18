@@ -32,7 +32,7 @@ type ReportRow = {
   users: { name: string } | null;
 };
 
-type Bar = { id: string; name: string };
+type Bar = { id: string; name: string; is_active: boolean };
 
 type ReportGroup = {
   key: string;
@@ -56,7 +56,7 @@ export default function Reports() {
   useEffect(() => {
     supabase
       .from("bars")
-      .select("id, name")
+      .select("id, name, is_active")
       .order("name")
       .then(({ data }) => setBars(data ?? []));
   }, []);
@@ -199,6 +199,7 @@ export default function Reports() {
           {bars.map((b) => (
             <option key={b.id} value={b.id}>
               {b.name}
+              {!b.is_active && " (inactive)"}
             </option>
           ))}
         </select>

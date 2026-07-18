@@ -44,6 +44,7 @@ type EditableReport = {
 };
 
 const UNLOCK_KEY = "bar-math-unlocked";
+const LAST_BAR_KEY = "barmath:lastBarId";
 
 export default function App() {
   const [unlocked, setUnlocked] = useState(() => localStorage.getItem(UNLOCK_KEY) === "true");
@@ -79,7 +80,7 @@ export default function App() {
     if (!unlocked) return;
     (async () => {
       const [barsRes, usersRes] = await Promise.all([
-        supabase.from("bars").select("id, name, kitchen_tip_percentage, kitchen_tip_method").order("name"),
+        supabase.from("bars").select("id, name, kitchen_tip_percentage, kitchen_tip_method, is_active").order("name"),
         // Deliberately not filtering by is_active here: this is also the
         // matching set resolveUser checks before creating a new user row,
         // and it must include deactivated bartenders too, or re-entering
@@ -95,7 +96,8 @@ export default function App() {
       }
       setBars(barsRes.data ?? []);
       setUsers(usersRes.data ?? []);
-      const defaultBar = (barsRes.data ?? []).find((b) => b.name === "Louie's");
+      const savedBarId = localStorage.getItem(LAST_BAR_KEY);
+      const defaultBar = (barsRes.data ?? []).find((b) => b.id === savedBarId && b.is_active);
       if (defaultBar && !editReportId) setSelectedBarId(defaultBar.id);
     })();
   }, [unlocked, editReportId]);
@@ -363,17 +365,22 @@ export default function App() {
             <select
               className="bar-select"
               value={selectedBarId}
-              onChange={(e) => setSelectedBarId(e.target.value)}
+              onChange={(e) => {
+                setSelectedBarId(e.target.value);
+                localStorage.setItem(LAST_BAR_KEY, e.target.value);
+              }}
               disabled={!!editingReport}
             >
               <option value="" disabled>
                 Select bar…
               </option>
-              {bars.map((bar) => (
-                <option key={bar.id} value={bar.id}>
-                  {bar.name}
-                </option>
-              ))}
+              {bars
+                .filter((bar) => bar.is_active || bar.id === selectedBarId)
+                .map((bar) => (
+                  <option key={bar.id} value={bar.id}>
+                    {bar.name}
+                  </option>
+                ))}
             </select>
 
             <div className="closing-field">

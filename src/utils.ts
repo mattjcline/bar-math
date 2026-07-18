@@ -2,7 +2,7 @@ import Fuse from "fuse.js";
 
 export type KitchenTipMethod = "percentage_of_tips" | "percentage_of_gross_kitchen_sales";
 
-export type Bar = { id: string; name: string; kitchen_tip_percentage: number | null; kitchen_tip_method: KitchenTipMethod };
+export type Bar = { id: string; name: string; kitchen_tip_percentage: number | null; kitchen_tip_method: KitchenTipMethod; is_active: boolean };
 export type StaffUser = { id: string; name: string; is_active: boolean };
 
 export function customRound(val: number) {

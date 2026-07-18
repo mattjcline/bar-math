@@ -7,7 +7,8 @@ create table bars (
   webhook_url              text,
   webhook_delta_threshold  numeric default 20,
   kitchen_tip_percentage   numeric default 12,
-  kitchen_tip_method       text not null default 'percentage_of_tips'
+  kitchen_tip_method       text not null default 'percentage_of_tips',
+  is_active                boolean not null default true
 );
 
 alter table bars add constraint kitchen_tip_percentage_range
