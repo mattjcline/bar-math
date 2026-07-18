@@ -1,10 +1,16 @@
 // Local dev helper: mints a real admin-panel session without sending a
 // magic-link email, since Supabase's built-in email sender rate-limits
-// hard after a few sends. Uses SUPABASE_SERVICE_KEY (.env.local, never
-// committed) to generate + verify a link server-side, then opens the
-// same kind of URL the real email link would redirect to (session
-// tokens in the hash) so Admin.tsx's existing auth code handles it
-// completely unchanged. Never run this against a deployed build.
+// hard after a few sends. Uses SUPABASE_SERVICE_KEY to generate + verify
+// a link server-side, then opens the same kind of URL the real email
+// link would redirect to (session tokens in the hash) so Admin.tsx's
+// existing auth code handles it completely unchanged. Never run this
+// against a deployed build.
+//
+// Reads the same env-file precedence CRA itself uses for `npm start`
+// (later files win), so this always targets whatever project `npm
+// start` is actually pointed at -- the dev Supabase project via
+// .env.development.local, not prod's tracked .env -- without needing
+// its own separate config to keep in sync.
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "fs";
 import { execSync } from "child_process";
@@ -21,7 +27,7 @@ const parseEnv = (path) =>
     });
 
 let env = {};
-for (const file of [".env", ".env.local"]) {
+for (const file of [".env", ".env.development", ".env.local", ".env.development.local"]) {
   try {
     env = { ...env, ...Object.fromEntries(parseEnv(root + file)) };
   } catch {

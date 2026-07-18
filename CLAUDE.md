@@ -12,9 +12,19 @@ Bar Math is a single-page end-of-night calculator for bartenders/bar managers. G
 - `npm test` — run tests via `react-scripts test` (Jest, interactive watch mode; pass `-- --watchAll=false` for a single non-watch run)
 - `npm run build` — production build to `build/`
 - `npm run deploy` — builds and publishes `build/` to GitHub Pages via `gh-pages`
-- `npm run dev:signin -- you@example.com [port]` — mints a real admin-panel session via the Supabase admin API (using `SUPABASE_SERVICE_KEY` from `.env.local`) and opens it, skipping the sign-in email entirely. Even with custom SMTP configured, use this for local admin-panel testing instead of repeatedly requesting real sign-in codes. Requires `npm start` already running. Local-only — lives in `scripts/`, outside `src/`, never bundled into the shipped app.
+- `npm run dev:signin -- you@example.com [port]` — mints a real admin-panel session via the Supabase admin API (using `SUPABASE_SERVICE_KEY`) and opens it, skipping the sign-in email entirely. Even with custom SMTP configured, use this for local admin-panel testing instead of repeatedly requesting real sign-in codes. Requires `npm start` already running. Local-only — lives in `scripts/`, outside `src/`, never bundled into the shipped app.
 
 There is no separate lint command; ESLint runs as part of `react-scripts start`/`build` via the `eslintConfig` (`react-app`, `react-app/jest`) in `package.json`.
+
+### Dev vs. prod Supabase
+
+There are two Supabase projects: prod (real bar data, what the deployed app at `mattjcline.github.io/bar-math` talks to) and a dev project seeded with the same schema but placeholder bars ("Bar One" through "Bar Four") and no real data. Which one gets used is entirely determined by which env file loads, via CRA's own env-file precedence — no code branches on an environment flag:
+
+- `npm start` loads `.env.development.local` (gitignored, holds the dev project's URL/keys), which overrides the tracked `.env`'s prod values — so local dev always hits the dev project automatically.
+- `npm run build` / `npm run deploy` don't load `.env.development.local` at all, so they fall through to the tracked `.env` (prod) — the deployed app always hits prod.
+- `scripts/dev-signin.mjs` reads env files in the same precedence order CRA itself uses for `npm start` (`.env`, `.env.development`, `.env.local`, `.env.development.local`, later wins), so it always targets whatever `npm start` is currently pointed at.
+
+This means local dev/testing (mine or Matt's) can't touch prod data even by accident, without needing to remember to switch anything. If the dev project's schema or policies ever need updating, re-run the relevant SQL from `src/schema.sql` / `supabase/policies.sql` there by hand too — it doesn't get the changes automatically.
 
 ## Architecture
 
@@ -66,12 +76,4 @@ Still hack-mode, nothing here is live for real users yet — tracked so this doe
 
 - **Webhook alerting isn't wired up.** `bars.webhook_url` / `bars.webhook_delta_threshold` are editable in Bar Settings and `reports.webhook_sent` exists as a column, but nothing ever reads them or fires a request — no Supabase Edge Function or DB trigger exists yet. Right now editing those fields in Bar Settings has no effect beyond storing the values. Destination platform, researched but not decided: **Discord** fits the existing `bars.webhook_url` field well — a bar creates a webhook URL in their own channel's settings, and alerting is a plain `POST` of a JSON body to that URL, no auth/tokens/third-party account needed on our end. **WhatsApp** doesn't support simple inbound webhook URLs the way Discord/Slack do — it would require going through Twilio's WhatsApp API or Meta's official WhatsApp Cloud API instead, with stored credentials in an Edge Function, a meaningfully bigger lift and a different shape for `webhook_url` (a destination number/API config, not a bare POST-able URL).
 - **No bar management.** Bar Settings edits the 4 existing bars only; adding, renaming, or removing a bar isn't supported anywhere in the UI.
-
-## In-progress work
-
-- **Dev Supabase project, not yet created.** All local dev/testing has been running directly against the production Supabase project — there's no separate dev environment, and it's been a real problem (a session's worth of test bartenders/reports/invites ended up in prod and had to be manually cleaned up). Fix in progress:
-  1. Matt creates a second Supabase project (e.g. `bar-math-dev`) via the dashboard and shares its URL + anon/publishable key + service_role key.
-  2. Claude runs `schema.sql` + `policies.sql` against it (pasted into its SQL editor, same manual-migration convention as prod).
-  3. Claude adds a gitignored `.env.development.local` with the dev project's URL/key — CRA loads this automatically for `npm start` and *only* `npm start`, so local dev is automatically pointed at the dev project while `npm run build`/`deploy` still falls through to the tracked `.env` (prod) untouched. No manual switching, nothing to remember.
-  4. Claude updates `scripts/dev-signin.mjs`'s env-file read order to also pick up `.env.development.local` (it currently only reads `.env` + `.env.local`, so it would otherwise keep minting sessions against prod even after step 3).
-  - Also there's a known real bug queued behind this: deactivated bartenders get silently duplicated (not reactivated) if their exact name is re-entered on the calculator, since the name-matching lookup only fetches `is_active = true` users. Fix: `resolveUser`'s matching set needs to include inactive users too, not just the autocomplete suggestions. Deliberately not fixed yet — wanted the dev environment in place first so testing it doesn't touch prod again.
+- **Deactivated bartenders get duplicated instead of reactivated.** If someone is deactivated in Staff and their exact name is later re-entered on the calculator, `resolveUser` creates a brand-new `users` row rather than finding/reactivating the original, because its matching set (`users` state in `App.tsx`) is fetched with `.eq("is_active", true)` — meant for the autocomplete suggestions, but it's also the only thing `resolveUser` checks against. Fix needs the matching set to include inactive users too, while the autocomplete suggestions themselves stay active-only. Found via a real dev-environment test, not yet fixed.
