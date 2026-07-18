@@ -13,7 +13,13 @@ type ReportRow = {
   till: number | null;
   am_bank: number | null;
   staff: StaffPayout[] | null;
+  cc_tips: number | null;
+  cash_tips: number | null;
+  cash_sales: number | null;
+  credit_sales: number | null;
+  total_sales: number | null;
   total_tips: number | null;
+  tip_percentage: number | null;
   hourly_rate: number | null;
   till_delta: number | null;
   kitchen_tip_percentage: number | null;
@@ -61,7 +67,7 @@ export default function Reports() {
     let query = supabase
       .from("reports")
       .select(
-        "id, shift_date, version, is_void, bar_id, till, am_bank, staff, total_tips, hourly_rate, till_delta, kitchen_tip_percentage, kitchen_tip_amount, kitchen_tip_method, gross_kitchen_sales, notes, created_at, bars(name), users(name)"
+        "id, shift_date, version, is_void, bar_id, till, am_bank, staff, cc_tips, cash_tips, cash_sales, credit_sales, total_sales, total_tips, tip_percentage, hourly_rate, till_delta, kitchen_tip_percentage, kitchen_tip_amount, kitchen_tip_method, gross_kitchen_sales, notes, created_at, bars(name), users(name)"
       )
       .order("shift_date", { ascending: false })
       .order("version", { ascending: false });
@@ -335,6 +341,46 @@ function ReportDetail({
         <div>
           <div className="result-label">AM Bank</div>
           <div>{viewed.am_bank != null ? fmt(viewed.am_bank) : "—"}</div>
+        </div>
+        <div>
+          <div className="result-label">Till Delta</div>
+          <div>
+            {viewed.till_delta == null
+              ? "—"
+              : `${viewed.till_delta > 0 ? "+" : ""}${fmt(viewed.till_delta)}`}
+          </div>
+        </div>
+        <div>
+          <div className="result-label">Cash Tips</div>
+          <div>{viewed.cash_tips != null ? fmt(viewed.cash_tips) : "—"}</div>
+        </div>
+        <div>
+          <div className="result-label">Credit Card Tips</div>
+          <div>{viewed.cc_tips != null ? fmt(viewed.cc_tips) : "—"}</div>
+        </div>
+        <div>
+          <div className="result-label">Total Tips</div>
+          <div>{viewed.total_tips != null ? fmt(viewed.total_tips) : "—"}</div>
+        </div>
+        <div>
+          <div className="result-label">Tip %</div>
+          <div>{viewed.tip_percentage != null ? `${viewed.tip_percentage.toFixed(1)}%` : "—"}</div>
+        </div>
+        <div>
+          <div className="result-label">Cash Sales</div>
+          <div>{viewed.cash_sales != null ? fmt(viewed.cash_sales) : "—"}</div>
+        </div>
+        <div>
+          <div className="result-label">Credit Card Sales</div>
+          <div>{viewed.credit_sales != null ? fmt(viewed.credit_sales) : "—"}</div>
+        </div>
+        <div>
+          <div className="result-label">Total Sales</div>
+          <div>{viewed.total_sales != null ? fmt(viewed.total_sales) : "—"}</div>
+        </div>
+        <div>
+          <div className="result-label">Saved At</div>
+          <div>{new Date(viewed.created_at).toLocaleString()}</div>
         </div>
       </div>
 

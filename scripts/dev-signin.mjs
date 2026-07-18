@@ -38,15 +38,17 @@ for (const file of [".env", ".env.development", ".env.local", ".env.development.
 const url = env.REACT_APP_SUPABASE_URL;
 const anonKey = env.REACT_APP_SUPABASE_PUBLISHABLE_KEY;
 const serviceKey = env.SUPABASE_SERVICE_KEY;
-const email = process.argv[2];
-const port = process.argv[3] ?? "3000";
+const args = process.argv.slice(2).filter((a) => a !== "--no-open");
+const noOpen = args.length !== process.argv.length - 2;
+const email = args[0];
+const port = args[1] ?? "3000";
 
 if (!serviceKey) {
   console.error("SUPABASE_SERVICE_KEY not found in .env.local — add it before using this script.");
   process.exit(1);
 }
 if (!email) {
-  console.error("Usage: npm run dev:signin -- you@example.com [port]");
+  console.error("Usage: npm run dev:signin -- you@example.com [port] [--no-open]");
   process.exit(1);
 }
 
@@ -80,6 +82,10 @@ const hash = new URLSearchParams({
 
 const target = `http://localhost:${port}/?admin#${hash}`;
 console.log(`Signed-in URL for ${email}:\n${target}\n`);
+
+if (noOpen) {
+  process.exit(0);
+}
 
 try {
   execSync(`open "${target}"`);

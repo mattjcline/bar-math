@@ -12,7 +12,7 @@ Bar Math is a single-page end-of-night calculator for bartenders/bar managers. G
 - `npm test` — run tests via `react-scripts test` (Jest, interactive watch mode; pass `-- --watchAll=false` for a single non-watch run)
 - `npm run build` — production build to `build/`
 - `npm run deploy` — builds and publishes `build/` to GitHub Pages via `gh-pages`
-- `npm run dev:signin -- you@example.com [port]` — mints a real admin-panel session via the Supabase admin API (using `SUPABASE_SERVICE_KEY`) and opens it, skipping the sign-in email entirely. Even with custom SMTP configured, use this for local admin-panel testing instead of repeatedly requesting real sign-in codes. Requires `npm start` already running. Local-only — lives in `scripts/`, outside `src/`, never bundled into the shipped app.
+- `npm run dev:signin -- you@example.com [port] [--no-open]` — mints a real admin-panel session via the Supabase admin API (using `SUPABASE_SERVICE_KEY`) and opens it, skipping the sign-in email entirely. Even with custom SMTP configured, use this for local admin-panel testing instead of repeatedly requesting real sign-in codes. Requires `npm start` already running. Local-only — lives in `scripts/`, outside `src/`, never bundled into the shipped app. When Claude is driving this for its own headless verification (e.g. via Playwright) rather than for the user to click into, pass `--no-open` — otherwise it pops a real browser window open on the user's machine via macOS `open`. Likewise, start `npm start` itself with `BROWSER=none npm start` for headless/agent-driven runs, since CRA auto-opens a tab by default.
 
 There is no separate lint command; ESLint runs as part of `react-scripts start`/`build` via the `eslintConfig` (`react-app`, `react-app/jest`) in `package.json`.
 
