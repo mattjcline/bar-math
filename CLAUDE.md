@@ -73,7 +73,7 @@ This app is used on phones behind a bar at close-out, and must always work well 
 
 ## Known gaps / not yet built
 
-Still hack-mode, nothing here is live for real users yet — tracked so this doesn't get lost, not because any of it is urgent:
+Tracked as GitHub issues on this repo (`gh issue list --repo mattjcline/bar-math`), not here, so this list doesn't go stale. Notable ones as of this writing:
 
-- **Webhook alerting isn't wired up.** `bars.webhook_url` / `bars.webhook_delta_threshold` are editable in Bar Settings and `reports.webhook_sent` exists as a column, but nothing ever reads them or fires a request — no Supabase Edge Function or DB trigger exists yet. Right now editing those fields in Bar Settings has no effect beyond storing the values. Destination platform, researched but not decided: **Discord** fits the existing `bars.webhook_url` field well — a bar creates a webhook URL in their own channel's settings, and alerting is a plain `POST` of a JSON body to that URL, no auth/tokens/third-party account needed on our end. **WhatsApp** doesn't support simple inbound webhook URLs the way Discord/Slack do — it would require going through Twilio's WhatsApp API or Meta's official WhatsApp Cloud API instead, with stored credentials in an Edge Function, a meaningfully bigger lift and a different shape for `webhook_url` (a destination number/API config, not a bare POST-able URL).
-- **No bar management.** Bar Settings edits the 4 existing bars only; adding, renaming, or removing a bar isn't supported anywhere in the UI.
+- [#1 — Wire up webhook alerting for till over/short](https://github.com/mattjcline/bar-math/issues/1)
+- [#2 — No bar management (add/rename/remove)](https://github.com/mattjcline/bar-math/issues/2)
